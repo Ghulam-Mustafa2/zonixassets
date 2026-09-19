@@ -91,7 +91,9 @@ export async function POST(
       );
 
     const authData =
-      await authResponse.json();
+      await authResponse
+        .json()
+        .catch(() => null);
 
     if (!authResponse.ok) {
       return NextResponse.json(
@@ -235,6 +237,59 @@ export async function POST(
         profile.role ||
           "CUSTOMER"
       ).toUpperCase();
+
+    /*
+      Single-owner ADMIN protection.
+
+      Customers may sign in normally.
+
+      If an account has ADMIN role, it must be the exact
+      Supabase Auth user configured in OWNER_ADMIN_USER_ID.
+      This prevents a second accidentally-promoted ADMIN
+      account from receiving a valid application session.
+    */
+
+    if (role === "ADMIN") {
+      const ownerAdminUserId =
+        process.env.OWNER_ADMIN_USER_ID?.trim();
+
+      if (!ownerAdminUserId) {
+        return NextResponse.json(
+          {
+            success: false,
+
+            code:
+              "OWNER_ADMIN_NOT_CONFIGURED",
+
+            error:
+              "OWNER_ADMIN_USER_ID is not configured.",
+          },
+          {
+            status: 500,
+          }
+        );
+      }
+
+      if (
+        authData.user.id !==
+        ownerAdminUserId
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+
+            code:
+              "SINGLE_OWNER_ADMIN_ONLY",
+
+            error:
+              "This store is restricted to one owner administrator.",
+          },
+          {
+            status: 403,
+          }
+        );
+      }
+    }
 
     /*
       Login successful.

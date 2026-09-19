@@ -187,6 +187,43 @@ async function getAdminAuth() {
     };
   }
 
+  /*
+    Single-owner protection.
+
+    OWNER_ADMIN_USER_ID must match the one Supabase Auth user
+    who owns and operates ZonixAssets. A second profile with an
+    ADMIN role will still be denied access to this route.
+  */
+
+  const ownerAdminUserId =
+    process.env.OWNER_ADMIN_USER_ID?.trim();
+
+  if (!ownerAdminUserId) {
+    return {
+      error:
+        "OWNER_ADMIN_USER_ID is not configured.",
+      status: 500,
+      supabaseUrl,
+      supabaseKey,
+      accessToken,
+      user,
+      profile,
+    };
+  }
+
+  if (user.id !== ownerAdminUserId) {
+    return {
+      error:
+        "This store is restricted to one owner administrator.",
+      status: 403,
+      supabaseUrl,
+      supabaseKey,
+      accessToken,
+      user,
+      profile,
+    };
+  }
+
   return {
     error: null,
     status: 200,

@@ -1,382 +1,290 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type SiteSettings = {
   site_name?: string | null;
-  logo_url?: string | null;
   tagline?: string | null;
   footer_text?: string | null;
-};
-
-type SocialLink = {
-  id: string;
-  platform?: string | null;
-  label?: string | null;
-  url?: string | null;
-  icon_key?: string | null;
-  sort_order?: number | null;
-  is_visible?: boolean | null;
+  logo_url?: string | null;
 };
 
 type SiteContentResponse = {
   site?: SiteSettings | null;
-  socialLinks?: SocialLink[];
 };
 
-const fallbackSite: SiteSettings = {
-  site_name: "PakStore",
-  logo_url: null,
-  tagline:
-    "Premium digital products, tools and resources for creators, developers and modern businesses.",
-  footer_text:
-    "© PakStore. All rights reserved.",
-};
+const quickLinks: [string, string][] = [
+  ["Home", "/"],
+  ["All Products", "/products"],
+  ["Categories", "/categories"],
+  ["Featured", "/products"],
+];
+
+const serviceLinks: [string, string][] = [
+  ["Contact Us", "/contact"],
+  ["Support", "/support"],
+  ["Refund Policy", "/refund-policy"],
+  ["Terms", "/terms"],
+];
+
+const accountLinks: [string, string][] = [
+  ["Sign In", "/login"],
+  ["Create Account", "/register"],
+  ["Dashboard", "/account"],
+  ["My Orders", "/account"],
+];
 
 export default function Footer() {
-  const [site, setSite] =
-    useState<SiteSettings>(fallbackSite);
-
-  const [socialLinks, setSocialLinks] =
-    useState<SocialLink[]>([]);
+  const [site, setSite] = useState<SiteSettings>({
+    site_name: "Zonix Assets",
+    tagline: "Premium Digital Marketplace",
+    footer_text:
+      "Professional digital products, templates, UI kits, graphics and tools for creators.",
+    logo_url: null,
+  });
 
   useEffect(() => {
-    async function loadFooterContent() {
+    async function loadSite() {
       try {
-        const response = await fetch(
-          "/api/site-content",
-          {
-            cache: "no-store",
-          }
-        );
-
-        if (!response.ok) {
-          return;
-        }
-
-        const data =
-          (await response.json()) as SiteContentResponse;
-
-        setSite({
-          ...fallbackSite,
-          ...(data.site || {}),
+        const response = await fetch("/api/site-content", {
+          cache: "no-store",
         });
 
-        setSocialLinks(
-          Array.isArray(data.socialLinks)
-            ? data.socialLinks
-                .filter(
-                  (item) =>
-                    item.is_visible !== false &&
-                    Boolean(item.url)
-                )
-                .sort(
-                  (a, b) =>
-                    Number(a.sort_order || 0) -
-                    Number(b.sort_order || 0)
-                )
-            : []
-        );
+        if (!response.ok) return;
+
+        const data = (await response.json()) as SiteContentResponse;
+
+        setSite((current) => ({
+          ...current,
+          ...(data.site || {}),
+        }));
       } catch {
-        // Keep fallback footer content.
+        // Keep fallback values.
       }
     }
 
-    loadFooterContent();
+    loadSite();
   }, []);
 
-  const siteName =
-    site.site_name?.trim() || "PakStore";
-
-  const brand = useMemo(() => {
-    const words = siteName
-      .split(/\s+/)
-      .filter(Boolean);
-
-    if (words.length <= 1) {
-      const text = words[0] || "PakStore";
-
-      if (text.length <= 3) {
-        return {
-          primary: text,
-          accent: "",
-        };
-      }
-
-      const splitAt = Math.max(
-        1,
-        Math.floor(text.length * 0.55)
-      );
-
-      return {
-        primary: text.slice(0, splitAt),
-        accent: text.slice(splitAt),
-      };
-    }
-
-    return {
-      primary: `${words.slice(0, -1).join(" ")} `,
-      accent: words[words.length - 1],
-    };
-  }, [siteName]);
-
-  const description =
-    site.tagline?.trim() ||
-    fallbackSite.tagline ||
-    "";
-
-  const footerText =
-    site.footer_text?.trim() ||
-    `© ${new Date().getFullYear()} ${siteName}. All rights reserved.`;
+  const siteName = site.site_name?.trim() || "Zonix Assets";
 
   return (
-    <footer className="border-t border-white/10 bg-black text-white">
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-12 md:grid-cols-4">
-        <div>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-3 text-2xl font-bold"
-          >
-            {site.logo_url ? (
-              <img
-                src={site.logo_url}
-                alt={siteName}
-                className="h-10 max-w-[190px] object-contain"
-              />
-            ) : (
-              <span>
-                {brand.primary}
-                <span className="text-emerald-400">
-                  {brand.accent}
-                </span>
+    <footer className="border-t border-white/10 bg-[#0b1025] text-white">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.25fr_.8fr_.9fr_.8fr_1fr] lg:gap-7">
+          <div className="sm:col-span-2 lg:col-span-1">
+            <Link
+              href="/"
+              className="inline-flex items-center"
+              aria-label="Zonix Assets home"
+            >
+              {site.logo_url ? (
+                <img
+                  src={site.logo_url}
+                  alt={siteName}
+                  className="h-auto w-[180px] object-contain sm:w-[190px]"
+                />
+              ) : (
+                <Image
+                  src="/images/branding/zonix-assets-logo.svg"
+                  alt={siteName}
+                  width={220}
+                  height={62}
+                  className="h-auto w-[180px] object-contain sm:w-[190px]"
+                />
+              )}
+            </Link>
+
+            <p className="mt-4 max-w-sm text-[11px] leading-5 text-white/50 sm:text-sm sm:leading-6">
+              {site.footer_text?.trim() ||
+                "Professional digital products, templates, UI kits, graphics and tools for creators."}
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="rounded-md border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-[9px] font-bold text-white/70 sm:text-[10px]">
+                Instant Access
               </span>
-            )}
-          </Link>
-
-          <p className="mt-4 max-w-xs text-sm leading-6 text-white/40">
-            {description}
-          </p>
-
-          {socialLinks.length > 0 && (
-            <div className="mt-6 flex flex-wrap gap-3">
-              {socialLinks.map((social) => {
-                const label =
-                  social.label?.trim() ||
-                  social.platform?.trim() ||
-                  "Social";
-
-                return (
-                  <a
-                    key={social.id}
-                    href={social.url || "#"}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={label}
-                    title={label}
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-sm font-semibold text-white/70 transition hover:border-emerald-400/30 hover:bg-emerald-400/10 hover:text-emerald-300"
-                  >
-                    <SocialIcon
-                      iconKey={social.icon_key}
-                      platform={social.platform}
-                      label={label}
-                    />
-                  </a>
-                );
-              })}
+              <span className="rounded-md border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-[9px] font-bold text-white/70 sm:text-[10px]">
+                Secure Checkout
+              </span>
             </div>
-          )}
-        </div>
+          </div>
 
-        <div>
-          <h3 className="font-semibold">
-            Marketplace
-          </h3>
+          <FooterColumn title="Quick Links" links={quickLinks} />
+          <FooterColumn title="Customer Service" links={serviceLinks} />
+          <FooterColumn title="My Account" links={accountLinks} />
 
-          <div className="mt-4 flex flex-col gap-3 text-sm text-white/40">
-            <Link
-              href="/products"
-              className="hover:text-white"
-            >
-              All Products
-            </Link>
+          <div className="hidden sm:block">
+            <h3 className="text-sm font-black text-white">Contact Us</h3>
 
-            <Link
-              href="/categories"
-              className="hover:text-white"
-            >
-              Categories
-            </Link>
+            <div className="mt-4 space-y-3 text-sm text-white/50">
+              <p>
+                <span className="block text-[10px] uppercase tracking-wider text-white/30">
+                  Website
+                </span>
+                <span className="mt-1 block break-all font-semibold text-white/75">
+                  zonixassets.shop
+                </span>
+              </p>
 
-            <Link
-              href="/products"
-              className="hover:text-white"
-            >
-              Featured Products
-            </Link>
+              <p>
+                <span className="block text-[10px] uppercase tracking-wider text-white/30">
+                  Support
+                </span>
+                <Link
+                  href="/contact"
+                  className="mt-1 block font-semibold text-white/75 transition hover:text-[#ff6b00]"
+                >
+                  Contact support
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
 
-        <div>
-          <h3 className="font-semibold">
-            Company
-          </h3>
+        <div className="mt-7 space-y-2.5 sm:hidden">
+          <MobileFooterGroup title="Quick Links" links={quickLinks} />
+          <MobileFooterGroup title="Customer Service" links={serviceLinks} />
+          <MobileFooterGroup title="My Account" links={accountLinks} />
 
-          <div className="mt-4 flex flex-col gap-3 text-sm text-white/40">
-            <Link
-              href="/about"
-              className="hover:text-white"
-            >
-              About
-            </Link>
+          <details className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
+            <summary className="flex min-h-[50px] cursor-pointer list-none items-center justify-between px-4 py-3.5 text-[11px] font-black uppercase tracking-[0.12em] text-white">
+              Contact Us
+              <span className="text-base leading-none text-white/35 transition-transform duration-200 group-open:rotate-45">
+                +
+              </span>
+            </summary>
 
-            <Link
-              href="/contact"
-              className="hover:text-white"
-            >
-              Contact
-            </Link>
+            <div className="grid grid-cols-2 gap-4 border-t border-white/10 px-4 py-4 text-[11px] text-white/50">
+              <div>
+                <span className="block text-[9px] uppercase tracking-wider text-white/30">
+                  Website
+                </span>
+                <span className="mt-1.5 block font-semibold text-white/75">
+                  zonixassets.shop
+                </span>
+              </div>
 
-            <Link
-              href="/support"
-              className="hover:text-white"
-            >
-              Support
-            </Link>
-          </div>
+              <div>
+                <span className="block text-[9px] uppercase tracking-wider text-white/30">
+                  Support
+                </span>
+                <Link
+                  href="/contact"
+                  className="mt-1.5 block font-semibold text-white/75 transition hover:text-[#ff6b00]"
+                >
+                  Contact support
+                </Link>
+              </div>
+            </div>
+          </details>
         </div>
 
-        <div>
-          <h3 className="font-semibold">
-            Account
-          </h3>
+        <div className="mt-8 grid gap-5 border-t border-white/10 pt-6 md:grid-cols-[1fr_auto] md:items-center">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="mr-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/35 sm:text-xs">
+              Secure payments
+            </span>
 
-          <div className="mt-4 flex flex-col gap-3 text-sm text-white/40">
-            <Link
-              href="/login"
-              className="hover:text-white"
-            >
-              Sign In
-            </Link>
-
-            <Link
-              href="/register"
-              className="hover:text-white"
-            >
-              Create Account
-            </Link>
-
-            <Link
-              href="/account"
-              className="hover:text-white"
-            >
-              Dashboard
-            </Link>
+            {[
+              "/payments/visa-mastercard.png",
+              "/payments/lemon-squeezy.jpeg",
+            ].map((src) => (
+              <div
+                key={src}
+                className="flex h-9 w-16 items-center justify-center rounded-lg border border-white/10 bg-white p-1.5 shadow-sm"
+              >
+                <img
+                  src={src}
+                  alt="Payment provider"
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+            ))}
           </div>
-        </div>
-      </div>
 
-      <div className="border-t border-white/10">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-6 py-6 text-sm text-white/40 md:flex-row">
-          <p>{footerText}</p>
-
-          <div className="flex gap-6">
-            <Link
-              href="/privacy"
-              className="hover:text-white"
-            >
-              Privacy
+          <div className="flex flex-wrap gap-x-4 gap-y-2.5 text-[10px] text-white/48 sm:text-xs">
+            <Link href="/privacy" className="transition hover:text-[#ff6b00]">
+              Privacy Policy
             </Link>
-
-            <Link
-              href="/terms"
-              className="hover:text-white"
-            >
+            <Link href="/terms" className="transition hover:text-[#ff6b00]">
               Terms
             </Link>
-
-<Link
-  href="/refund-policy"
-  className="hover:text-white"
->
-  Refund Policy
-</Link>
             <Link
-              href="/support"
-              className="hover:text-white"
+              href="/refund-policy"
+              className="transition hover:text-[#ff6b00]"
             >
-              Support
+              Refund Policy
             </Link>
           </div>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-1.5 border-t border-white/10 pt-5 text-[9px] leading-4 text-white/30 sm:flex-row sm:items-center sm:justify-between sm:text-xs">
+          <p>
+            © {new Date().getFullYear()} {siteName}. All rights reserved.
+          </p>
+          <p>Digital products • Secure checkout • Instant access</p>
         </div>
       </div>
     </footer>
   );
 }
 
-function SocialIcon({
-  iconKey,
-  platform,
-  label,
+function FooterColumn({
+  title,
+  links,
 }: {
-  iconKey?: string | null;
-  platform?: string | null;
-  label: string;
+  title: string;
+  links: [string, string][];
 }) {
-  const key = (
-    iconKey ||
-    platform ||
-    label
-  )
-    .trim()
-    .toLowerCase();
-
-  if (key.includes("facebook")) {
-    return <span className="text-base">f</span>;
-  }
-
-  if (
-    key.includes("instagram")
-  ) {
-    return <span className="text-base">◎</span>;
-  }
-
-  if (
-    key === "x" ||
-    key.includes("twitter")
-  ) {
-    return <span className="text-base">𝕏</span>;
-  }
-
-  if (
-    key.includes("youtube")
-  ) {
-    return <span className="text-base">▶</span>;
-  }
-
-  if (
-    key.includes("linkedin")
-  ) {
-    return <span className="text-sm">in</span>;
-  }
-
-  if (
-    key.includes("github")
-  ) {
-    return <span className="text-base">⌘</span>;
-  }
-
-  if (
-    key.includes("tiktok")
-  ) {
-    return <span className="text-base">♪</span>;
-  }
-
   return (
-    <span className="text-sm">
-      {label
-        .slice(0, 1)
-        .toUpperCase()}
-    </span>
+    <div className="hidden sm:block">
+      <h3 className="text-sm font-black text-white">{title}</h3>
+
+      <div className="mt-4 space-y-3">
+        {links.map(([label, href]) => (
+          <Link
+            key={label}
+            href={href}
+            className="block text-sm leading-5 text-white/50 transition hover:text-[#ff6b00]"
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MobileFooterGroup({
+  title,
+  links,
+}: {
+  title: string;
+  links: [string, string][];
+}) {
+  return (
+    <details className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
+      <summary className="flex min-h-[50px] cursor-pointer list-none items-center justify-between px-4 py-3.5 text-[11px] font-black uppercase tracking-[0.12em] text-white">
+        {title}
+        <span className="text-base leading-none text-white/35 transition-transform duration-200 group-open:rotate-45">
+          +
+        </span>
+      </summary>
+
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/10 px-4 py-4">
+        {links.map(([label, href]) => (
+          <Link
+            key={label}
+            href={href}
+            className="text-[11px] leading-5 text-white/55 transition hover:text-[#ff6b00]"
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+    </details>
   );
 }

@@ -14,11 +14,35 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PakStore",
-  description: "Premium Digital Marketplace",
+  title: {
+    default: "ZonixAssets",
+    template: "%s | ZonixAssets",
+  },
+  description:
+    "Premium digital assets, templates, tools, and creative resources from ZonixAssets.",
+  applicationName: "ZonixAssets",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ||
+      "http://localhost:3000"
+  ),
+  openGraph: {
+    title: "ZonixAssets",
+    description:
+      "Premium digital assets, templates, tools, and creative resources from ZonixAssets.",
+    type: "website",
+    siteName: "ZonixAssets",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ZonixAssets",
+    description:
+      "Premium digital assets, templates, tools, and creative resources from ZonixAssets.",
+  },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: LayoutProps<"/">) {
   return (
     <html
       lang="en"

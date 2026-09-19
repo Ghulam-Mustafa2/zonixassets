@@ -33,6 +33,9 @@ type CartContextType = {
   isCartLoaded: boolean;
 };
 
+const CART_STORAGE_KEY = "zonixassets-cart";
+const LEGACY_CART_STORAGE_KEY = "pakstore-cart";
+
 const CartContext = createContext<CartContextType | undefined>(
   undefined
 );
@@ -44,15 +47,40 @@ function isValidCartItem(item: unknown): item is CartItem {
 
   return (
     typeof cartItem.id === "string" &&
+    cartItem.id.trim().length > 0 &&
     typeof cartItem.slug === "string" &&
+    cartItem.slug.trim().length > 0 &&
     typeof cartItem.title === "string" &&
+    cartItem.title.trim().length > 0 &&
     typeof cartItem.category === "string" &&
     typeof cartItem.price === "number" &&
     Number.isFinite(cartItem.price) &&
+    cartItem.price >= 0 &&
     typeof cartItem.quantity === "number" &&
     Number.isInteger(cartItem.quantity) &&
     cartItem.quantity > 0
   );
+}
+
+function normalizeCart(items: CartItem[]) {
+  const merged = new Map<string, CartItem>();
+
+  for (const item of items) {
+    const existing = merged.get(item.id);
+
+    if (existing) {
+      merged.set(item.id, {
+        ...existing,
+        quantity: existing.quantity + item.quantity,
+      });
+
+      continue;
+    }
+
+    merged.set(item.id, item);
+  }
+
+  return Array.from(merged.values());
 }
 
 export function CartProvider({
@@ -63,45 +91,67 @@ export function CartProvider({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartLoaded, setIsCartLoaded] = useState(false);
 
-  // Load cart from localStorage once
   useEffect(() => {
     try {
-      const savedCart = localStorage.getItem("pakstore-cart");
+      const currentCart =
+        localStorage.getItem(CART_STORAGE_KEY);
+
+      const legacyCart =
+        localStorage.getItem(LEGACY_CART_STORAGE_KEY);
+
+      const savedCart = currentCart || legacyCart;
 
       if (!savedCart) {
-        setIsCartLoaded(true);
         return;
       }
 
       const parsedCart: unknown = JSON.parse(savedCart);
 
       if (!Array.isArray(parsedCart)) {
-        localStorage.removeItem("pakstore-cart");
-        setIsCartLoaded(true);
+        localStorage.removeItem(CART_STORAGE_KEY);
+        localStorage.removeItem(LEGACY_CART_STORAGE_KEY);
         return;
       }
 
-      const validCart = parsedCart.filter(isValidCartItem);
+      const validCart = normalizeCart(
+        parsedCart.filter(isValidCartItem)
+      );
 
       setCart(validCart);
+
+      if (!currentCart && legacyCart) {
+        localStorage.setItem(
+          CART_STORAGE_KEY,
+          JSON.stringify(validCart)
+        );
+
+        localStorage.removeItem(
+          LEGACY_CART_STORAGE_KEY
+        );
+      }
     } catch (error) {
       console.error("CART_LOAD_ERROR:", error);
 
-      localStorage.removeItem("pakstore-cart");
+      localStorage.removeItem(CART_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_CART_STORAGE_KEY);
+
       setCart([]);
     } finally {
       setIsCartLoaded(true);
     }
   }, []);
 
-  // Save cart whenever it changes
   useEffect(() => {
     if (!isCartLoaded) return;
 
     try {
       localStorage.setItem(
-        "pakstore-cart",
+        CART_STORAGE_KEY,
         JSON.stringify(cart)
+      );
+
+      localStorage.removeItem(
+        LEGACY_CART_STORAGE_KEY
       );
     } catch (error) {
       console.error("CART_SAVE_ERROR:", error);
@@ -110,9 +160,9 @@ export function CartProvider({
 
   function addToCart(product: CartProduct) {
     if (
-      !product.id ||
-      !product.slug ||
-      !product.title ||
+      !product.id?.trim() ||
+      !product.slug?.trim() ||
+      !product.title?.trim() ||
       !Number.isFinite(product.price) ||
       product.price < 0
     ) {
@@ -151,12 +201,16 @@ export function CartProvider({
   }
 
   function removeFromCart(id: string) {
+    if (!id) return;
+
     setCart((currentCart) =>
       currentCart.filter((item) => item.id !== id)
     );
   }
 
   function increaseQuantity(id: string) {
+    if (!id) return;
+
     setCart((currentCart) =>
       currentCart.map((item) =>
         item.id === id
@@ -170,6 +224,8 @@ export function CartProvider({
   }
 
   function decreaseQuantity(id: string) {
+    if (!id) return;
+
     setCart((currentCart) =>
       currentCart
         .map((item) =>
@@ -203,7 +259,7 @@ export function CartProvider({
     );
   }, [cart]);
 
-  const value = useMemo(
+  const value = useMemo<CartContextType>(
     () => ({
       cart,
       addToCart,

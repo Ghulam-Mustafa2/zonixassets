@@ -230,7 +230,7 @@ export default function OrderSuccessPage() {
 
               <p className="mx-auto mt-4 max-w-xl leading-7 text-white/45">
                 Your order has been saved successfully
-                in PakStore. You can track its status
+                in ZonixAssets. You can track its status
                 from your customer dashboard.
               </p>
             </div>

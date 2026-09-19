@@ -37,7 +37,7 @@ function normalizeProduct(product: AnyRow) {
     description:
       text(product.short_description) ||
       text(product.description) ||
-      "Premium digital product available on PakStore.",
+      "Premium digital product available on ZonixAssets.",
     category:
       text(product.category) ||
       text(product.category_name) ||
@@ -99,8 +99,8 @@ export async function GET() {
       are allowed to read.
     */
     const headers = {
-  apikey: supabaseKey,
-};
+      apikey: supabaseKey,
+    };
 
     const [
       siteResponse,

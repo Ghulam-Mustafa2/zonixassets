@@ -110,7 +110,9 @@ async function getAdminAuth(
   }
 
   const user =
-    await userResponse.json();
+    await userResponse
+      .json()
+      .catch(() => null);
 
   if (!user?.id) {
     return {
@@ -179,7 +181,9 @@ async function getAdminAuth(
 
   if (
     !profile ||
-    profile.role !== "ADMIN" ||
+    String(
+      profile.role || ""
+    ).toUpperCase() !== "ADMIN" ||
     profile.is_active === false
   ) {
     return {
@@ -189,6 +193,49 @@ async function getAdminAuth(
         {
           error:
             "Admin access required.",
+        },
+        {
+          status: 403,
+        }
+      ),
+    };
+  }
+
+  /*
+    Single-owner protection.
+
+    OWNER_ADMIN_USER_ID must match the one Supabase Auth user
+    who owns and operates ZonixAssets. Even if another profile
+    is accidentally assigned ADMIN, this route will deny it.
+  */
+
+  const ownerAdminUserId =
+    process.env.OWNER_ADMIN_USER_ID?.trim();
+
+  if (!ownerAdminUserId) {
+    return {
+      ok: false,
+
+      response: NextResponse.json(
+        {
+          error:
+            "OWNER_ADMIN_USER_ID is not configured.",
+        },
+        {
+          status: 500,
+        }
+      ),
+    };
+  }
+
+  if (user.id !== ownerAdminUserId) {
+    return {
+      ok: false,
+
+      response: NextResponse.json(
+        {
+          error:
+            "This store is restricted to one owner administrator.",
         },
         {
           status: 403,
@@ -209,6 +256,7 @@ function sanitizeFileName(
   fileName: string
 ) {
   return fileName
+    .trim()
     .toLowerCase()
     .replace(
       /[^a-z0-9.\-_]/g,
@@ -218,6 +266,17 @@ function sanitizeFileName(
       /-+/g,
       "-"
     );
+}
+
+function encodeStorageObjectPath(
+  storagePath: string
+) {
+  return storagePath
+    .split("/")
+    .map((part) =>
+      encodeURIComponent(part)
+    )
+    .join("/");
 }
 
 export async function POST(
@@ -245,6 +304,20 @@ export async function POST(
         {
           error:
             "Image file is required.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (
+      uploadedFile.size <= 0
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Selected image is empty.",
         },
         {
           status: 400,
@@ -302,11 +375,14 @@ export async function POST(
     const fileBuffer =
       await uploadedFile.arrayBuffer();
 
+    const encodedStoragePath =
+      encodeStorageObjectPath(
+        storagePath
+      );
+
     const uploadResponse =
       await fetch(
-        `${auth.supabaseUrl}/storage/v1/object/product-images/${encodeURIComponent(
-          storagePath
-        )}`,
+        `${auth.supabaseUrl}/storage/v1/object/product-images/${encodedStoragePath}`,
         {
           method: "POST",
 
@@ -356,7 +432,7 @@ export async function POST(
     }
 
     const publicUrl =
-      `${auth.supabaseUrl}/storage/v1/object/public/product-images/${storagePath}`;
+      `${auth.supabaseUrl}/storage/v1/object/public/product-images/${encodedStoragePath}`;
 
     return NextResponse.json(
       {

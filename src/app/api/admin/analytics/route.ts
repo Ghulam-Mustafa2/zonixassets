@@ -296,6 +296,43 @@ export async function GET(
     }
 
     /*
+      Single-owner protection.
+
+      OWNER_ADMIN_USER_ID must match the one Supabase Auth user
+      who owns and operates ZonixAssets. A second profile with an
+      ADMIN role will still be denied access to analytics.
+    */
+
+    const ownerAdminUserId =
+      process.env.OWNER_ADMIN_USER_ID?.trim();
+
+    if (!ownerAdminUserId) {
+      return NextResponse.json(
+        {
+          error:
+            "OWNER_ADMIN_USER_ID is not configured.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (userData.id !== ownerAdminUserId) {
+      return NextResponse.json(
+        {
+          code:
+            "SINGLE_OWNER_ADMIN_ONLY",
+          error:
+            "This store is restricted to one owner administrator.",
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+    /*
       5. Optional date range
 
       /api/admin/analytics?from=2026-09-01&to=2026-09-30

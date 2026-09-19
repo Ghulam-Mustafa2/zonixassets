@@ -7,6 +7,7 @@ type ProfileRow = {
   first_name?: string | null;
   last_name?: string | null;
   role?: string | null;
+  is_active?: boolean | null;
 };
 
 type OrderRow = {
@@ -123,7 +124,7 @@ async function getAdminAuth() {
     await fetch(
       `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(
         user.id
-      )}&select=id,email,first_name,last_name,role`,
+      )}&select=id,email,first_name,last_name,role,is_active`,
       {
         method: "GET",
 
@@ -188,12 +189,52 @@ async function getAdminAuth() {
 
   if (
     profile.role?.toUpperCase() !==
-    "ADMIN"
+      "ADMIN" ||
+    profile.is_active === false
   ) {
     return {
       success: false,
       error:
         "You do not have permission to access admin orders.",
+      status: 403,
+      supabaseUrl,
+      supabaseKey,
+      accessToken,
+      user,
+      profile,
+    };
+  }
+
+  /*
+    Single-owner protection.
+
+    OWNER_ADMIN_USER_ID must match the one Supabase Auth user
+    who owns and operates ZonixAssets. A second profile with an
+    ADMIN role will still be denied access to this route.
+  */
+
+  const ownerAdminUserId =
+    process.env.OWNER_ADMIN_USER_ID?.trim();
+
+  if (!ownerAdminUserId) {
+    return {
+      success: false,
+      error:
+        "OWNER_ADMIN_USER_ID is not configured.",
+      status: 500,
+      supabaseUrl,
+      supabaseKey,
+      accessToken,
+      user,
+      profile,
+    };
+  }
+
+  if (user.id !== ownerAdminUserId) {
+    return {
+      success: false,
+      error:
+        "This store is restricted to one owner administrator.",
       status: 403,
       supabaseUrl,
       supabaseKey,

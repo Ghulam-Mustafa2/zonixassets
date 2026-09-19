@@ -8,9 +8,12 @@ type RegisterBody = {
   password?: string;
 };
 
-export async function POST(request: Request) {
+export async function POST(
+  request: Request
+) {
   try {
-    const body = (await request.json()) as RegisterBody;
+    const body =
+      (await request.json()) as RegisterBody;
 
     const firstName =
       typeof body.firstName === "string"
@@ -32,69 +35,121 @@ export async function POST(request: Request) {
         ? body.password
         : "";
 
-    if (!firstName || !lastName || !email || !password) {
+    if (
+      !firstName ||
+      !lastName ||
+      !email ||
+      !password
+    ) {
       return NextResponse.json(
-        { error: "All fields are required." },
-        { status: 400 }
+        {
+          error:
+            "All fields are required.",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailPattern =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailPattern.test(email)) {
       return NextResponse.json(
-        { error: "Please enter a valid email address." },
-        { status: 400 }
+        {
+          error:
+            "Please enter a valid email address.",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
     if (password.length < 8) {
       return NextResponse.json(
-        { error: "Password must be at least 8 characters." },
-        { status: 400 }
+        {
+          error:
+            "Password must be at least 8 characters.",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
     const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL;
+      process.env
+        .NEXT_PUBLIC_SUPABASE_URL;
 
     const supabaseKey =
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      process.env
+        .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+      process.env
+        .NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!supabaseUrl || !supabaseKey) {
-      console.error("REGISTER_ENV_ERROR");
+    if (
+      !supabaseUrl ||
+      !supabaseKey
+    ) {
+      console.error(
+        "REGISTER_ENV_ERROR"
+      );
 
       return NextResponse.json(
         {
           error:
             "Supabase environment variables are missing.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseKey,
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false,
-        },
-      }
-    );
+    /*
+      Public registration is CUSTOMER-only.
 
-    const { data, error } =
+      The request body intentionally has no role field and
+      the role value is hard-coded here. A visitor cannot
+      request ADMIN access through this endpoint.
+    */
+
+    const fixedRole =
+      "CUSTOMER" as const;
+
+    const supabase =
+      createClient(
+        supabaseUrl,
+        supabaseKey,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+          },
+        }
+      );
+
+    const {
+      data,
+      error,
+    } =
       await supabase.auth.signUp({
         email,
         password,
+
         options: {
           data: {
-            first_name: firstName,
-            last_name: lastName,
-            role: "CUSTOMER",
+            first_name:
+              firstName,
+
+            last_name:
+              lastName,
+
+            role:
+              fixedRole,
           },
         },
       });
@@ -118,7 +173,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const createdUser = data.user;
+    const createdUser =
+      data.user;
 
     if (!createdUser?.id) {
       console.error(
@@ -131,7 +187,9 @@ export async function POST(request: Request) {
           error:
             "Account could not be created. Please try again.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
@@ -141,21 +199,36 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: true,
-        message: requiresConfirmation
-          ? "Account created successfully. Please check your email to confirm your account before signing in."
-          : "Account created successfully. You can now sign in.",
+
+        message:
+          requiresConfirmation
+            ? "Account created successfully. Please check your email to confirm your account before signing in."
+            : "Account created successfully. You can now sign in.",
+
         user: {
-          id: createdUser.id,
+          id:
+            createdUser.id,
+
           email:
-            createdUser.email || email,
+            createdUser.email ||
+            email,
+
           firstName,
+
           lastName,
-          role: "CUSTOMER",
-          isActive: true,
+
+          role:
+            fixedRole,
+
+          isActive:
+            true,
         },
+
         requiresConfirmation,
       },
-      { status: 201 }
+      {
+        status: 201,
+      }
     );
   } catch (error) {
     console.error(
@@ -168,7 +241,9 @@ export async function POST(request: Request) {
         error:
           "Something went wrong while creating your account.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }

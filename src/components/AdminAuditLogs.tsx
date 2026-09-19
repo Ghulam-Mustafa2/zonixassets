@@ -627,7 +627,7 @@ export default function AdminAuditLogs() {
 
     link.href = url;
     link.download =
-      `pakstore-audit-logs-${filterSuffix}${dateRangeSuffix}-${today}.csv`;
+      `zonixassets-audit-logs-${filterSuffix}${dateRangeSuffix}-${today}.csv`;
 
     document.body.appendChild(
       link
@@ -641,490 +641,372 @@ export default function AdminAuditLogs() {
     );
   }
 
+
   return (
-    <main className="min-h-screen bg-black text-white">
-      <header className="border-b border-white/10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+    <main className="min-h-screen bg-[#eef3f8] text-[#091426]">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0b1226]/95 text-white backdrop-blur">
+        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/admin"
-              className="text-2xl font-bold"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-lg font-black text-[#091426] shadow-sm"
+              aria-label="Admin dashboard"
             >
-              Pak
-              <span className="text-emerald-400">
-                Store
-              </span>
+              Z
             </Link>
 
-            <p className="mt-1 text-xs text-white/35">
-              Admin Audit Logs
-            </p>
+            <div className="min-w-0">
+              <Link
+                href="/admin"
+                className="block truncate text-lg font-black tracking-tight"
+              >
+                Zonix<span className="text-cyan-400">Assets</span>
+              </Link>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">
+                Admin audit logs
+              </p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/admin"
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm transition hover:bg-white/10"
-            >
-              Dashboard
-            </Link>
+          <nav className="hidden items-center gap-2 md:flex">
+            <AdminNav href="/admin">Dashboard</AdminNav>
+            <AdminNav href="/admin/orders">Orders</AdminNav>
+            <AdminNav href="/admin/customers">Customers</AdminNav>
+            <AdminNav href="/admin/analytics">Analytics</AdminNav>
+          </nav>
 
-            <Link
-              href="/admin/customers"
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm transition hover:bg-white/10"
-            >
-              Customers
-            </Link>
+          <Link
+            href="/"
+            className="shrink-0 rounded-2xl bg-[#ff650f] px-4 py-2.5 text-sm font-black text-white shadow-[0_10px_30px_rgba(255,101,15,0.22)] transition hover:-translate-y-0.5"
+          >
+            View Store
+          </Link>
+        </div>
 
-            <Link
-              href="/admin/orders"
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm transition hover:bg-white/10"
-            >
-              Orders
-            </Link>
+        <div className="overflow-x-auto border-t border-white/5 px-4 py-2 md:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex min-w-max gap-2">
+            <AdminNav href="/admin">Dashboard</AdminNav>
+            <AdminNav href="/admin/orders">Orders</AdminNav>
+            <AdminNav href="/admin/customers">Customers</AdminNav>
+            <AdminNav href="/admin/analytics">Analytics</AdminNav>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        <section className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm text-emerald-400">
-              Security
-            </p>
+      <section className="relative overflow-hidden bg-[#091426] text-white">
+        <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] [background-size:64px_64px]" />
+        <div className="absolute -right-20 -top-28 h-80 w-80 rounded-full bg-[#ff650f]/20 blur-3xl" />
+        <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-cyan-400/10 blur-3xl" />
 
-            <h1 className="mt-2 text-4xl font-bold md:text-5xl">
-              Audit Logs
+        <div className="relative mx-auto grid max-w-[1500px] gap-7 px-4 py-10 sm:px-6 sm:py-12 lg:grid-cols-[1.15fr_.85fr] lg:px-8 lg:py-14">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-orange-300">
+              <span className="h-2 w-2 rounded-full bg-[#ff650f]" />
+              Security center
+            </div>
+
+            <h1 className="mt-6 max-w-3xl text-4xl font-black tracking-[-0.04em] sm:text-5xl lg:text-6xl">
+              Admin activity,
+              <span className="block text-white/45">kept clear and traceable.</span>
             </h1>
 
-            <p className="mt-3 max-w-3xl text-white/45">
-              Review administrator actions for account
-              suspension, activation and role changes.
+            <p className="mt-5 max-w-2xl text-base leading-8 text-white/55 sm:text-lg">
+              Review account suspension, activation and role changes from one
+              searchable audit history.
             </p>
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={exportFilteredLogsToCsv}
+                disabled={loading || filteredLogs.length === 0}
+                className="rounded-2xl bg-[#ff650f] px-5 py-3 text-sm font-black text-white shadow-[0_12px_35px_rgba(255,101,15,0.25)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Export CSV
+              </button>
+
+              <button
+                type="button"
+                onClick={loadAuditLogs}
+                disabled={loading}
+                className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-black text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? "Refreshing..." : "Refresh Logs"}
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={
-                exportFilteredLogsToCsv
-              }
-              disabled={
-                loading ||
-                filteredLogs.length === 0
-              }
-              className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-5 py-3 font-semibold text-emerald-300 transition hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Export CSV
-            </button>
-
-            <button
-              type="button"
-              onClick={
-                loadAuditLogs
-              }
-              disabled={loading}
-              className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 font-semibold transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading
-                ? "Refreshing..."
-                : "Refresh Logs"}
-            </button>
+          <div className="grid gap-4 sm:grid-cols-2 lg:self-end">
+            <HeroMetric label="Total logs" value={String(stats.totalLogs)} wide />
+            <HeroMetric label="Suspended" value={String(stats.suspended)} />
+            <HeroMetric label="Activated" value={String(stats.activated)} />
           </div>
-        </section>
+        </div>
+      </section>
 
+      <div className="mx-auto max-w-[1500px] px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
         {error && (
-          <div className="mt-8 rounded-2xl border border-red-400/20 bg-red-400/10 px-5 py-4 text-red-300">
+          <div className="mb-7 rounded-[24px] border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
             {error}
           </div>
         )}
 
-        <section className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <StatCard
-            label="Total Logs"
-            value={String(
-              stats.totalLogs
-            )}
-            helper="Recorded admin actions"
+        <section>
+          <SectionHeading
+            eyebrow="Security overview"
+            title="Audit activity"
+            description="A quick snapshot of administrator account actions."
           />
 
-          <StatCard
-            label="Suspended"
-            value={String(
-              stats.suspended
-            )}
-            helper="Accounts suspended"
-            danger
-          />
-
-          <StatCard
-            label="Activated"
-            value={String(
-              stats.activated
-            )}
-            helper="Accounts restored"
-            emerald
-          />
-
-          <StatCard
-            label="Promoted"
-            value={String(
-              stats.promotedToAdmin
-            )}
-            helper="Changed to ADMIN"
-          />
-
-          <StatCard
-            label="Demoted"
-            value={String(
-              stats.changedToCustomer
-            )}
-            helper="Changed to CUSTOMER"
-          />
-        </section>
-
-        <section className="mt-10 rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex flex-wrap gap-3">
-                <FilterButton
-                  active={
-                    filter === "ALL"
-                  }
-                  onClick={() =>
-                    setFilter("ALL")
-                  }
-                >
-                  All
-                </FilterButton>
-
-                <FilterButton
-                  active={
-                    filter ===
-                    "ACCOUNT_SUSPENDED"
-                  }
-                  onClick={() =>
-                    setFilter(
-                      "ACCOUNT_SUSPENDED"
-                    )
-                  }
-                >
-                  Suspended
-                </FilterButton>
-
-                <FilterButton
-                  active={
-                    filter ===
-                    "ACCOUNT_ACTIVATED"
-                  }
-                  onClick={() =>
-                    setFilter(
-                      "ACCOUNT_ACTIVATED"
-                    )
-                  }
-                >
-                  Activated
-                </FilterButton>
-
-                <FilterButton
-                  active={
-                    filter ===
-                    "ROLE_CHANGED_TO_ADMIN"
-                  }
-                  onClick={() =>
-                    setFilter(
-                      "ROLE_CHANGED_TO_ADMIN"
-                    )
-                  }
-                >
-                  → Admin
-                </FilterButton>
-
-                <FilterButton
-                  active={
-                    filter ===
-                    "ROLE_CHANGED_TO_CUSTOMER"
-                  }
-                  onClick={() =>
-                    setFilter(
-                      "ROLE_CHANGED_TO_CUSTOMER"
-                    )
-                  }
-                >
-                  → Customer
-                </FilterButton>
-              </div>
-
-              <input
-                value={search}
-                onChange={(event) =>
-                  setSearch(
-                    event.target.value
-                  )
-                }
-                placeholder="Search admin, user, email, action..."
-                className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white outline-none placeholder:text-white/20 focus:border-emerald-400/40 xl:max-w-md"
-              />
-            </div>
-
-            <div className="flex flex-col gap-4 border-t border-white/10 pt-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-xs font-medium text-white/40">
-                    From Date
-                  </span>
-
-                  <input
-                    type="date"
-                    value={fromDate}
-                    max={
-                      toDate ||
-                      undefined
-                    }
-                    onChange={(event) =>
-                      setFromDate(
-                        event.target.value
-                      )
-                    }
-                    className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white outline-none focus:border-emerald-400/40"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-xs font-medium text-white/40">
-                    To Date
-                  </span>
-
-                  <input
-                    type="date"
-                    value={toDate}
-                    min={
-                      fromDate ||
-                      undefined
-                    }
-                    onChange={(event) =>
-                      setToDate(
-                        event.target.value
-                      )
-                    }
-                    className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white outline-none focus:border-emerald-400/40"
-                  />
-                </label>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setQuickDateRange(
-                      1
-                    )
-                  }
-                  className="rounded-xl border border-white/10 bg-black px-4 py-3 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white"
-                >
-                  Today
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setQuickDateRange(
-                      7
-                    )
-                  }
-                  className="rounded-xl border border-white/10 bg-black px-4 py-3 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white"
-                >
-                  Last 7 Days
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setQuickDateRange(
-                      30
-                    )
-                  }
-                  className="rounded-xl border border-white/10 bg-black px-4 py-3 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white"
-                >
-                  Last 30 Days
-                </button>
-
-                <button
-                  type="button"
-                  onClick={
-                    clearDateFilters
-                  }
-                  disabled={
-                    !fromDate &&
-                    !toDate
-                  }
-                  className="rounded-xl border border-white/10 bg-black px-4 py-3 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Clear Dates
-                </button>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
-              <label className="flex items-center gap-3 text-sm text-white/45">
-                Sort
-                <select
-                  value={sortOrder}
-                  onChange={(event) =>
-                    setSortOrder(
-                      event.target
-                        .value as SortOrder
-                    )
-                  }
-                  className="rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white outline-none focus:border-emerald-400/40"
-                >
-                  <option value="NEWEST">
-                    Newest First
-                  </option>
-
-                  <option value="OLDEST">
-                    Oldest First
-                  </option>
-                </select>
-              </label>
-
-              <button
-                type="button"
-                onClick={
-                  clearAllFilters
-                }
-                className="w-fit rounded-xl border border-red-400/20 bg-red-400/5 px-4 py-3 text-sm font-medium text-red-300 transition hover:bg-red-400/10"
-              >
-                Clear All Filters
-              </button>
-            </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <StatCard
+              label="Total logs"
+              value={String(stats.totalLogs)}
+              helper="Recorded admin actions"
+              accent="navy"
+            />
+            <StatCard
+              label="Suspended"
+              value={String(stats.suspended)}
+              helper="Accounts suspended"
+              accent="red"
+            />
+            <StatCard
+              label="Activated"
+              value={String(stats.activated)}
+              helper="Accounts restored"
+              accent="green"
+            />
+            <StatCard
+              label="Promoted"
+              value={String(stats.promotedToAdmin)}
+              helper="Changed to ADMIN"
+              accent="purple"
+            />
+            <StatCard
+              label="Demoted"
+              value={String(stats.changedToCustomer)}
+              helper="Changed to CUSTOMER"
+              accent="cyan"
+            />
           </div>
         </section>
 
-        <section className="mt-10 overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03]">
-          <div className="border-b border-white/10 p-6 md:p-8">
-            <p className="text-sm text-emerald-400">
-              Activity
-            </p>
+        <section className="mt-8 rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_20px_55px_rgba(15,23,42,0.06)] sm:p-6">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#ff650f]">
+                Filters
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight">
+                Find an audit event
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Filter by action, person, date or sort order.
+              </p>
+            </div>
 
-            <h2 className="mt-1 text-2xl font-bold">
-              Admin Activity
-            </h2>
+            <div className="w-full xl:max-w-xl">
+              <label className="mb-2 block text-xs font-bold text-slate-500">
+                Search
+              </label>
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search admin, user, email, action..."
+                className="w-full rounded-2xl border border-slate-200 bg-[#f7f9fc] px-4 py-3 text-sm font-semibold outline-none transition placeholder:text-slate-300 focus:border-[#ff650f] focus:ring-4 focus:ring-orange-100"
+              />
+            </div>
+          </div>
 
-            <p className="mt-2 text-sm text-white/35">
-              Showing{" "}
-              {
-                filteredLogs.length
-              }{" "}
-              log
-              {filteredLogs.length ===
-              1
-                ? ""
-                : "s"}
-              . CSV export uses the current action, search, date and sort filters.
-            </p>
+          <div className="mt-5 flex gap-2 overflow-x-auto border-t border-slate-100 pt-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <FilterButton active={filter === "ALL"} onClick={() => setFilter("ALL")}>
+              All
+            </FilterButton>
+            <FilterButton
+              active={filter === "ACCOUNT_SUSPENDED"}
+              onClick={() => setFilter("ACCOUNT_SUSPENDED")}
+            >
+              Suspended
+            </FilterButton>
+            <FilterButton
+              active={filter === "ACCOUNT_ACTIVATED"}
+              onClick={() => setFilter("ACCOUNT_ACTIVATED")}
+            >
+              Activated
+            </FilterButton>
+            <FilterButton
+              active={filter === "ROLE_CHANGED_TO_ADMIN"}
+              onClick={() => setFilter("ROLE_CHANGED_TO_ADMIN")}
+            >
+              → Admin
+            </FilterButton>
+            <FilterButton
+              active={filter === "ROLE_CHANGED_TO_CUSTOMER"}
+              onClick={() => setFilter("ROLE_CHANGED_TO_CUSTOMER")}
+            >
+              → Customer
+            </FilterButton>
+          </div>
+
+          <div className="mt-5 grid gap-4 border-t border-slate-100 pt-5 lg:grid-cols-[1fr_1fr_auto]">
+            <label>
+              <span className="mb-2 block text-xs font-bold text-slate-500">
+                From date
+              </span>
+              <input
+                type="date"
+                value={fromDate}
+                max={toDate || undefined}
+                onChange={(event) => setFromDate(event.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-[#f7f9fc] px-4 py-3 text-sm font-semibold outline-none transition focus:border-[#ff650f] focus:ring-4 focus:ring-orange-100"
+              />
+            </label>
+
+            <label>
+              <span className="mb-2 block text-xs font-bold text-slate-500">
+                To date
+              </span>
+              <input
+                type="date"
+                value={toDate}
+                min={fromDate || undefined}
+                onChange={(event) => setToDate(event.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-[#f7f9fc] px-4 py-3 text-sm font-semibold outline-none transition focus:border-[#ff650f] focus:ring-4 focus:ring-orange-100"
+              />
+            </label>
+
+            <label>
+              <span className="mb-2 block text-xs font-bold text-slate-500">
+                Sort
+              </span>
+              <select
+                value={sortOrder}
+                onChange={(event) =>
+                  setSortOrder(event.target.value as SortOrder)
+                }
+                className="w-full rounded-2xl border border-slate-200 bg-[#f7f9fc] px-4 py-3 text-sm font-semibold outline-none transition focus:border-[#ff650f] focus:ring-4 focus:ring-orange-100 lg:min-w-[170px]"
+              >
+                <option value="NEWEST">Newest First</option>
+                <option value="OLDEST">Oldest First</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-5 flex gap-2 overflow-x-auto border-t border-slate-100 pt-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <PresetButton onClick={() => setQuickDateRange(1)}>Today</PresetButton>
+            <PresetButton onClick={() => setQuickDateRange(7)}>
+              Last 7 Days
+            </PresetButton>
+            <PresetButton onClick={() => setQuickDateRange(30)}>
+              Last 30 Days
+            </PresetButton>
+            <PresetButton
+              onClick={clearDateFilters}
+              disabled={!fromDate && !toDate}
+            >
+              Clear Dates
+            </PresetButton>
+            <PresetButton onClick={clearAllFilters} danger>
+              Clear All Filters
+            </PresetButton>
+          </div>
+        </section>
+
+        <section className="mt-8 overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_20px_55px_rgba(15,23,42,0.05)]">
+          <div className="flex flex-col gap-3 border-b border-slate-100 p-6 sm:flex-row sm:items-end sm:justify-between sm:p-7">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#ff650f]">
+                Activity
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight">
+                Admin activity
+              </h2>
+              <p className="mt-2 text-sm text-slate-500">
+                Showing {filteredLogs.length} log
+                {filteredLogs.length === 1 ? "" : "s"}. CSV export uses the
+                current filters and sort order.
+              </p>
+            </div>
+
+            <div className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black text-slate-500">
+              {filteredLogs.length} result{filteredLogs.length === 1 ? "" : "s"}
+            </div>
           </div>
 
           {loading ? (
-            <div className="p-10 text-center text-white/40">
+            <div className="p-12 text-center text-sm font-semibold text-slate-400">
               Loading audit logs...
             </div>
-          ) : filteredLogs.length ===
-            0 ? (
-            <div className="p-10 text-center">
-              <p className="font-medium">
-                No audit logs found.
-              </p>
-
-              <p className="mt-2 text-sm text-white/40">
-                Admin account changes will appear here.
-              </p>
+          ) : filteredLogs.length === 0 ? (
+            <div className="p-10 sm:p-14">
+              <EmptyState
+                title="No audit logs found"
+                text="Try changing the filters, search term or date range."
+              />
             </div>
           ) : (
-            <div className="divide-y divide-white/10">
-              {filteredLogs.map(
-                (log) => (
-                  <article
-                    key={log.id}
-                    className="p-6 md:p-8"
-                  >
-                    <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <span
-                            className={`rounded-full border px-3 py-1 text-xs font-semibold ${actionClasses(
-                              log.action
-                            )}`}
-                          >
-                            {actionLabel(
-                              log.action
-                            )}
-                          </span>
+            <div className="divide-y divide-slate-100">
+              {filteredLogs.map((log) => (
+                <article key={log.id} className="p-5 sm:p-7">
+                  <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span
+                          className={`rounded-full border px-3 py-1.5 text-[11px] font-black ${actionClassesLight(
+                            log.action
+                          )}`}
+                        >
+                          {actionLabel(log.action)}
+                        </span>
 
-                          <span className="text-xs text-white/30">
-                            {formatDate(
-                              log.createdAt
-                            )}
-                          </span>
-                        </div>
-
-                        <div className="mt-6 grid gap-4 md:grid-cols-2">
-                          <PersonCard
-                            label="Performed By"
-                            person={
-                              log.admin
-                            }
-                          />
-
-                          <PersonCard
-                            label="Target Account"
-                            person={
-                              log.targetUser
-                            }
-                            showStatus
-                          />
-                        </div>
+                        <span className="text-xs font-medium text-slate-400">
+                          {formatDate(log.createdAt)}
+                        </span>
                       </div>
 
-                      <Link
-                        href={
-                          log.targetUser
-                            ? `/admin/customers/${log.targetUser.id}`
-                            : "/admin/customers"
-                        }
-                        className="w-full rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-center text-sm font-semibold transition hover:bg-white/10 xl:w-auto"
-                      >
-                        View Customer
-                      </Link>
+                      <div className="mt-5 grid gap-4 md:grid-cols-2">
+                        <PersonCard
+                          label="Performed by"
+                          person={log.admin}
+                        />
+                        <PersonCard
+                          label="Target account"
+                          person={log.targetUser}
+                          showStatus
+                        />
+                      </div>
                     </div>
 
-                    <div className="mt-6 grid gap-4 md:grid-cols-2">
-                      <ValueCard
-                        label="Previous Value"
-                        value={
-                          formatAuditValue(
-                            log.oldValue
-                          )
-                        }
-                      />
+                    <Link
+                      href={
+                        log.targetUser
+                          ? `/admin/customers/${log.targetUser.id}`
+                          : "/admin/customers"
+                      }
+                      className="w-full rounded-2xl border border-slate-200 bg-[#f8fafc] px-5 py-3 text-center text-sm font-black transition hover:border-[#ff650f] hover:text-[#ff650f] xl:w-auto"
+                    >
+                      View Customer
+                    </Link>
+                  </div>
 
-                      <ValueCard
-                        label="New Value"
-                        value={
-                          formatAuditValue(
-                            log.newValue
-                          )
-                        }
-                        emerald
-                      />
-                    </div>
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <ValueCard
+                      label="Previous value"
+                      value={formatAuditValue(log.oldValue)}
+                    />
+                    <ValueCard
+                      label="New value"
+                      value={formatAuditValue(log.newValue)}
+                      accent
+                    />
+                  </div>
 
-                    <p className="mt-5 break-all text-xs text-white/20">
-                      Log ID: {log.id}
-                    </p>
-                  </article>
-                )
-              )}
+                  <p className="mt-4 break-all text-[11px] font-medium text-slate-300">
+                    Log ID: {log.id}
+                  </p>
+                </article>
+              ))}
             </div>
           )}
         </section>
@@ -1133,40 +1015,99 @@ export default function AdminAuditLogs() {
   );
 }
 
+function AdminNav({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="whitespace-nowrap rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-bold text-white/70 transition hover:bg-white/10 hover:text-white"
+    >
+      {children}
+    </Link>
+  );
+}
+
+function HeroMetric({
+  label,
+  value,
+  wide = false,
+}: {
+  label: string;
+  value: string;
+  wide?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-[24px] border border-white/10 bg-white/[0.06] p-5 backdrop-blur ${
+        wide ? "sm:col-span-2" : ""
+      }`}
+    >
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-300">
+        {label}
+      </p>
+      <p className="mt-2 break-words text-2xl font-black">{value}</p>
+    </div>
+  );
+}
+
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div>
+      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#ff650f]">
+        {eyebrow}
+      </p>
+      <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+        {title}
+      </h2>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+        {description}
+      </p>
+    </div>
+  );
+}
+
 function StatCard({
   label,
   value,
   helper,
-  emerald = false,
-  danger = false,
+  accent = "navy",
 }: {
   label: string;
   value: string;
   helper: string;
-  emerald?: boolean;
-  danger?: boolean;
+  accent?: "navy" | "red" | "green" | "purple" | "cyan";
 }) {
+  const accentStyles = {
+    navy: "bg-slate-100 text-[#091426]",
+    red: "bg-red-50 text-red-700",
+    green: "bg-emerald-50 text-emerald-700",
+    purple: "bg-violet-50 text-violet-700",
+    cyan: "bg-cyan-50 text-cyan-700",
+  };
+
   return (
-    <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
-      <p className="text-sm text-white/40">
-        {label}
-      </p>
-
-      <p
-        className={`mt-3 text-3xl font-bold ${
-          danger
-            ? "text-red-300"
-            : emerald
-              ? "text-emerald-400"
-              : "text-white"
-        }`}
+    <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
+      <div
+        className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl text-base font-black ${accentStyles[accent]}`}
       >
-        {value}
-      </p>
-
-      <p className="mt-3 text-xs text-white/25">
-        {helper}
-      </p>
+        ✦
+      </div>
+      <p className="mt-5 text-sm font-bold text-slate-500">{label}</p>
+      <p className="mt-2 text-3xl font-black tracking-tight">{value}</p>
+      <p className="mt-2 text-xs leading-5 text-slate-400">{helper}</p>
     </div>
   );
 }
@@ -1186,13 +1127,55 @@ function FilterButton({
       onClick={onClick}
       className={
         active
-          ? "rounded-xl bg-emerald-400 px-5 py-3 font-semibold text-black"
-          : "rounded-xl border border-white/10 bg-black px-5 py-3 font-medium text-white/60 transition hover:bg-white/5 hover:text-white"
+          ? "shrink-0 rounded-xl bg-[#091426] px-4 py-2.5 text-sm font-black text-white"
+          : "shrink-0 rounded-xl border border-slate-200 bg-[#f8fafc] px-4 py-2.5 text-sm font-black text-slate-600 transition hover:border-[#ff650f] hover:text-[#ff650f]"
       }
     >
       {children}
     </button>
   );
+}
+
+function PresetButton({
+  children,
+  onClick,
+  danger = false,
+  disabled = false,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`shrink-0 rounded-xl border px-4 py-2.5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${
+        danger
+          ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+          : "border-slate-200 bg-[#f8fafc] text-slate-600 hover:border-[#ff650f] hover:text-[#ff650f]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function actionClassesLight(action: string) {
+  switch (action) {
+    case "ACCOUNT_SUSPENDED":
+      return "border-red-200 bg-red-50 text-red-700";
+    case "ACCOUNT_ACTIVATED":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "ROLE_CHANGED_TO_ADMIN":
+      return "border-violet-200 bg-violet-50 text-violet-700";
+    case "ROLE_CHANGED_TO_CUSTOMER":
+      return "border-cyan-200 bg-cyan-50 text-cyan-700";
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-600";
+  }
 }
 
 function PersonCard({
@@ -1201,69 +1184,52 @@ function PersonCard({
   showStatus = false,
 }: {
   label: string;
-  person:
-    | AuditProfile
-    | TargetProfile
-    | null;
+  person: AuditProfile | TargetProfile | null;
   showStatus?: boolean;
 }) {
   if (!person) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-black p-5">
-        <p className="text-xs text-white/35">
-          {label}
-        </p>
-
-        <p className="mt-2 text-sm text-white/40">
+      <div className="rounded-2xl border border-slate-200 bg-[#f8fafc] p-5">
+        <p className="text-xs font-bold text-slate-400">{label}</p>
+        <p className="mt-2 text-sm font-semibold text-slate-500">
           Not available
         </p>
       </div>
     );
   }
 
-  const target =
-    person as TargetProfile;
+  const target = person as TargetProfile;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-black p-5">
-      <p className="text-xs text-white/35">
-        {label}
-      </p>
+    <div className="rounded-2xl border border-slate-200 bg-[#f8fafc] p-5">
+      <p className="text-xs font-bold text-slate-400">{label}</p>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <p className="font-semibold">
-          {person.name}
-        </p>
+        <p className="font-black text-[#091426]">{person.name}</p>
 
         {person.role && (
-          <span className="rounded-full border border-purple-400/20 bg-purple-400/10 px-2.5 py-1 text-[10px] font-semibold text-purple-300">
+          <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-black text-violet-700">
             {person.role}
           </span>
         )}
 
-        {showStatus &&
-          typeof target.isActive ===
-            "boolean" && (
-            <span
-              className={
-                target.isActive
-                  ? "rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-300"
-                  : "rounded-full border border-red-400/20 bg-red-400/10 px-2.5 py-1 text-[10px] font-semibold text-red-300"
-              }
-            >
-              {target.isActive
-                ? "ACTIVE"
-                : "SUSPENDED"}
-            </span>
-          )}
+        {showStatus && typeof target.isActive === "boolean" && (
+          <span
+            className={
+              target.isActive
+                ? "rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700"
+                : "rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[10px] font-black text-red-700"
+            }
+          >
+            {target.isActive ? "ACTIVE" : "SUSPENDED"}
+          </span>
+        )}
       </div>
 
-      <p className="mt-2 text-sm text-white/40">
-        {person.email ||
-          "No email"}
+      <p className="mt-2 break-all text-sm text-slate-500">
+        {person.email || "No email"}
       </p>
-
-      <p className="mt-2 break-all text-xs text-white/20">
+      <p className="mt-2 break-all text-[11px] text-slate-300">
         ID: {person.id}
       </p>
     </div>
@@ -1273,26 +1239,41 @@ function PersonCard({
 function ValueCard({
   label,
   value,
-  emerald = false,
+  accent = false,
 }: {
   label: string;
   value: string;
-  emerald?: boolean;
+  accent?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black p-5">
-      <p className="text-xs text-white/35">
-        {label}
-      </p>
-
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.03)]">
+      <p className="text-xs font-bold text-slate-400">{label}</p>
       <p
-        className={
-          emerald
-            ? "mt-2 text-sm font-medium leading-6 text-emerald-300"
-            : "mt-2 text-sm font-medium leading-6 text-white/70"
-        }
+        className={`mt-2 text-sm font-semibold leading-6 ${
+          accent ? "text-emerald-700" : "text-slate-700"
+        }`}
       >
         {value}
+      </p>
+    </div>
+  );
+}
+
+function EmptyState({
+  title,
+  text,
+}: {
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-[24px] border border-dashed border-slate-200 bg-[#f8fafc] px-5 py-12 text-center">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-xl text-[#ff650f]">
+        ✦
+      </div>
+      <p className="mt-4 font-black text-[#091426]">{title}</p>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-400">
+        {text}
       </p>
     </div>
   );

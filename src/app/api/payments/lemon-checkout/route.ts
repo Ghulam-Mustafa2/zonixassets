@@ -1,4 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
 
 type OrderRow = {
   id: string;
@@ -7,6 +10,32 @@ type OrderRow = {
   total: number | string;
   status: string;
 };
+
+type ProfileRow = {
+  id: string;
+  is_active?: boolean | null;
+};
+
+function parseBooleanEnv(
+  value: string | undefined
+) {
+  if (!value) {
+    return null;
+  }
+
+  const normalized =
+    value.trim().toLowerCase();
+
+  if (normalized === "true") {
+    return true;
+  }
+
+  if (normalized === "false") {
+    return false;
+  }
+
+  return null;
+}
 
 export async function POST(
   request: NextRequest
@@ -25,6 +54,11 @@ export async function POST(
     const lemonVariantId =
       process.env.LEMON_SQUEEZY_VARIANT_ID;
 
+    const lemonTestMode =
+      parseBooleanEnv(
+        process.env.LEMON_SQUEEZY_TEST_MODE
+      );
+
     const supabaseUrl =
       process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -37,7 +71,8 @@ export async function POST(
     if (
       !lemonApiKey ||
       !lemonStoreId ||
-      !lemonVariantId
+      !lemonVariantId ||
+      lemonTestMode === null
     ) {
       return NextResponse.json(
         {
@@ -58,6 +93,29 @@ export async function POST(
         {
           error:
             "Supabase configuration is incomplete.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    const storeIdNumber =
+      Number(lemonStoreId);
+
+    const variantIdNumber =
+      Number(lemonVariantId);
+
+    if (
+      !Number.isInteger(storeIdNumber) ||
+      storeIdNumber <= 0 ||
+      !Number.isInteger(variantIdNumber) ||
+      variantIdNumber <= 0
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Lemon Squeezy store or variant ID is invalid.",
         },
         {
           status: 500,
@@ -134,6 +192,90 @@ export async function POST(
     }
 
     /*
+      VERIFY ACTIVE PROFILE
+
+      A valid Supabase JWT is not enough.
+      Suspended accounts cannot create a payment checkout.
+    */
+
+    const profileResponse =
+      await fetch(
+        `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(
+          user.id
+        )}&select=id,is_active&limit=1`,
+        {
+          method: "GET",
+
+          headers: {
+            apikey: supabaseKey,
+
+            Authorization:
+              `Bearer ${accessToken}`,
+          },
+
+          cache: "no-store",
+        }
+      );
+
+    const profileData =
+      await profileResponse
+        .json()
+        .catch(() => null);
+
+    if (!profileResponse.ok) {
+      console.error(
+        "LEMON_PROFILE_LOAD_ERROR:",
+        profileData
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            profileData?.message ||
+            "Unable to verify your account status.",
+        },
+        {
+          status:
+            profileResponse.status || 500,
+        }
+      );
+    }
+
+    const profile: ProfileRow | undefined =
+      Array.isArray(profileData)
+        ? profileData[0]
+        : undefined;
+
+    if (!profile) {
+      return NextResponse.json(
+        {
+          error:
+            "Account profile was not found.",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+    if (
+      profile.is_active === false
+    ) {
+      return NextResponse.json(
+        {
+          code:
+            "ACCOUNT_SUSPENDED",
+
+          error:
+            "Your account has been suspended. Payments are not available.",
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+    /*
       READ REQUEST
     */
 
@@ -162,7 +304,6 @@ export async function POST(
     /*
       LOAD ORDER
 
-      Very important:
       user_id filter prevents one customer
       from paying another customer's order.
     */
@@ -230,7 +371,7 @@ export async function POST(
     }
 
     /*
-      DON'T PAY AN ALREADY PAID ORDER
+      ONLY PENDING ORDERS MAY ENTER CHECKOUT
     */
 
     const status =
@@ -250,14 +391,11 @@ export async function POST(
       );
     }
 
-    if (
-      status === "CANCELLED" ||
-      status === "REFUNDED"
-    ) {
+    if (status !== "PENDING") {
       return NextResponse.json(
         {
           error:
-            `This ${status.toLowerCase()} order cannot be paid.`,
+            `This ${status.toLowerCase() || "non-pending"} order cannot be paid.`,
         },
         {
           status: 409,
@@ -268,8 +406,9 @@ export async function POST(
     /*
       CALCULATE PRICE IN CENTS
 
-      Lemon Squeezy custom_price expects cents.
-      Example:
+      Lemon Squeezy custom_price expects
+      the currency's smallest unit.
+      USD example:
       $2.00 -> 200
     */
 
@@ -294,21 +433,41 @@ export async function POST(
     const totalInCents =
       Math.round(total * 100);
 
+    if (
+      !Number.isSafeInteger(
+        totalInCents
+      ) ||
+      totalInCents <= 0
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Order total could not be converted to a valid payment amount.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
     /*
-      OUR SITE URL
+      SITE URL
 
-      Local:
-      http://localhost:3000
-
-      Production:
-      automatically uses the current site origin.
+      Prefer an explicitly configured production URL.
+      Local development can fall back to request.nextUrl.origin.
     */
 
-    const origin =
+    const configuredSiteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL
+        ?.trim()
+        .replace(/\/+$/, "");
+
+    const siteOrigin =
+      configuredSiteUrl ||
       request.nextUrl.origin;
 
     const successUrl =
-      `${origin}/order-success/${encodeURIComponent(
+      `${siteOrigin}/order-success/${encodeURIComponent(
         order.id
       )}`;
 
@@ -341,7 +500,8 @@ export async function POST(
                 custom_price:
                   totalInCents,
 
-                test_mode: true,
+                test_mode:
+                  lemonTestMode,
 
                 product_options: {
                   name:
@@ -354,9 +514,7 @@ export async function POST(
                     successUrl,
 
                   enabled_variants: [
-                    Number(
-                      lemonVariantId
-                    ),
+                    variantIdNumber,
                   ],
                 },
 
@@ -390,7 +548,7 @@ export async function POST(
                   data: {
                     type: "stores",
                     id: String(
-                      lemonStoreId
+                      storeIdNumber
                     ),
                   },
                 },
@@ -399,13 +557,15 @@ export async function POST(
                   data: {
                     type: "variants",
                     id: String(
-                      lemonVariantId
+                      variantIdNumber
                     ),
                   },
                 },
               },
             },
           }),
+
+          cache: "no-store",
         }
       );
 
@@ -450,7 +610,10 @@ export async function POST(
     const checkoutUrl =
       lemonData?.data?.attributes?.url;
 
-    if (!checkoutUrl) {
+    if (
+      typeof checkoutUrl !== "string" ||
+      !checkoutUrl
+    ) {
       console.error(
         "LEMON_CHECKOUT_URL_MISSING:",
         lemonData
@@ -488,6 +651,9 @@ export async function POST(
 
         amount:
           total,
+
+        testMode:
+          lemonTestMode,
       },
       {
         status: 201,

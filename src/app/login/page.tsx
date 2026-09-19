@@ -1,93 +1,82 @@
-import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LoginForm from "@/components/LoginForm";
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-[#eef5f7] text-[#0c1328]">
       <Navbar />
 
-      <section className="mx-auto flex min-h-[720px] max-w-7xl items-center justify-center px-6 py-20">
-        <div className="grid w-full max-w-5xl overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] lg:grid-cols-2">
-          {/* Left */}
-          <div className="relative hidden overflow-hidden border-r border-white/10 bg-emerald-400/5 p-10 lg:block">
-            <div className="absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400/20 blur-[120px]" />
+      <section className="px-4 py-7 sm:px-6 sm:py-9 lg:px-8 lg:py-10">
+        <div className="mx-auto max-w-6xl">
+          {/* Page heading */}
+          <div className="mx-auto mb-7 max-w-4xl text-center sm:mb-9">
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-orange-500">
+              Welcome Back
+            </p>
 
-            <div className="relative flex h-full flex-col justify-between">
-              <div>
-                <p className="text-sm font-medium text-emerald-400">
-                  Welcome Back
-                </p>
+            <h1 className="mt-2 text-3xl font-black tracking-[-0.045em] text-[#0c1328] sm:text-4xl lg:text-5xl">
+              Access your digital account.
+            </h1>
 
-                <h1 className="mt-4 text-4xl font-bold leading-tight">
-                  Your digital library is waiting.
-                </h1>
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+              Sign in to manage purchases, order history and secure digital
+              downloads.
+            </p>
+          </div>
 
-                <p className="mt-5 max-w-sm leading-7 text-white/50">
-                  Sign in to access your purchases, downloads, invoices
-                  and account settings.
-                </p>
+          <div className="relative mx-auto grid max-w-[1040px] items-start gap-5 lg:grid-cols-[220px_1fr] lg:gap-9">
+            {/* Left Account Hub */}
+            <aside className="relative flex justify-center lg:sticky lg:top-28 lg:block">
+              <div className="flex h-32 w-32 items-center justify-center rounded-full border border-slate-200 bg-white text-center shadow-[0_20px_45px_rgba(15,23,42,0.10)] sm:h-36 sm:w-36 lg:h-44 lg:w-44">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-500">
+                    Zonix
+                  </p>
+
+                  <h2 className="mt-2 text-2xl font-black leading-[0.95] tracking-[-0.04em] text-[#0c1328] lg:text-3xl">
+                    Your
+                    <br />
+                    Account
+                  </h2>
+
+                  <p className="mt-2 text-[11px] font-semibold text-slate-400">
+                    Digital access hub
+                  </p>
+                </div>
               </div>
 
-              <div className="grid gap-4">
-                {[
-                  "Instant access to purchases",
-                  "Secure digital downloads",
-                  "Order history and invoices",
-                ].map((item) => (
+              <div className="mt-4 hidden grid-cols-3 gap-2 lg:grid">
+                {["Secure", "Digital", "Private"].map((item) => (
                   <div
                     key={item}
-                    className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 p-4"
+                    className="rounded-2xl border border-slate-200 bg-white/70 px-2 py-2.5 text-center text-[9px] font-black uppercase tracking-[0.12em] text-slate-500"
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-400/10 text-emerald-400">
-                      ✓
-                    </div>
-
-                    <span className="text-sm text-white/70">
-                      {item}
-                    </span>
+                    {item}
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
+            </aside>
 
-          {/* Right */}
-          <div className="p-8 md:p-12">
-            <p className="text-sm font-medium text-emerald-400">
-              Account Login
-            </p>
+            {/* Login section */}
+            <section className="min-w-0">
+              <div className="mb-4">
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-orange-500">
+                  Account Login
+                </p>
 
-            <h2 className="mt-2 text-3xl font-bold">
-              Sign in to PakStore
-            </h2>
+                <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[#0c1328] sm:text-3xl">
+                  Sign in to Zonix Assets.
+                </h2>
 
-            <p className="mt-3 text-sm text-white/40">
-              Enter your account details below.
-            </p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Enter your account details inside the secure connected nodes
+                  below.
+                </p>
+              </div>
 
-            <LoginForm />
-
-            <div className="my-7 flex items-center gap-4">
-              <div className="h-px flex-1 bg-white/10" />
-              <span className="text-xs text-white/30">OR</span>
-              <div className="h-px flex-1 bg-white/10" />
-            </div>
-
-            <button className="w-full rounded-xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-medium transition hover:bg-white/10">
-              Continue with Google
-            </button>
-
-            <p className="mt-7 text-center text-sm text-white/40">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/register"
-                className="font-medium text-emerald-400 hover:text-emerald-300"
-              >
-                Create Account
-              </Link>
-            </p>
+              <LoginForm />
+            </section>
           </div>
         </div>
       </section>

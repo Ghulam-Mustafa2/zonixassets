@@ -268,6 +268,44 @@ async function getAdminAuth() {
     };
   }
 
+  /*
+    Single-owner protection.
+
+    Set OWNER_ADMIN_USER_ID in .env.local to the Supabase Auth
+    user ID of the one account that owns and operates the store.
+    Even if another profile is accidentally assigned ADMIN in the
+    database, that account will not be able to use admin APIs.
+  */
+
+  const ownerAdminUserId =
+    process.env.OWNER_ADMIN_USER_ID?.trim();
+
+  if (!ownerAdminUserId) {
+    return {
+      success: false,
+      status: 500,
+      error:
+        "OWNER_ADMIN_USER_ID is not configured.",
+      supabaseUrl,
+      supabaseKey,
+      accessToken,
+      user,
+    };
+  }
+
+  if (user.id !== ownerAdminUserId) {
+    return {
+      success: false,
+      status: 403,
+      error:
+        "This store is restricted to one owner administrator.",
+      supabaseUrl,
+      supabaseKey,
+      accessToken,
+      user,
+    };
+  }
+
   if (adminProfile.is_active === false) {
     return {
       success: false,
@@ -742,13 +780,16 @@ export async function GET(
   ==========================================================
   PATCH /api/admin/customers/[id]
 
-  Supported bodies:
+  Single-owner store rules:
+  - The configured owner remains the only ADMIN.
+  - Customers cannot be promoted to ADMIN.
+  - The owner cannot remove their own ADMIN role.
+  - Customer activation / suspension is still supported.
 
-  { role: "ADMIN" }
+  Supported bodies:
   { role: "CUSTOMER" }
   { isActive: false }
   { isActive: true }
-  { role: "ADMIN", isActive: true }
   ==========================================================
 */
 
@@ -899,6 +940,27 @@ export async function PATCH(
           },
           {
             status: 400,
+          }
+        );
+      }
+
+      /*
+        The owner account is the only ADMIN account allowed.
+        Any attempt to promote a different profile is rejected
+        at the API layer, even if the UI is bypassed.
+      */
+      if (
+        requestedRole === "ADMIN" &&
+        customerId !== auth.user.id
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "This store supports one owner administrator only. Customer accounts cannot be promoted to ADMIN.",
+            code: "SINGLE_OWNER_ADMIN_ONLY",
+          },
+          {
+            status: 403,
           }
         );
       }

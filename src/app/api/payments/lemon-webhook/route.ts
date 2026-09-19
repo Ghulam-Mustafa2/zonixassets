@@ -83,6 +83,27 @@ function safeSignatureCompare(
   );
 }
 
+function parseBooleanEnv(
+  value: string | undefined
+) {
+  if (!value) {
+    return null;
+  }
+
+  const normalized =
+    value.trim().toLowerCase();
+
+  if (normalized === "true") {
+    return true;
+  }
+
+  if (normalized === "false") {
+    return false;
+  }
+
+  return null;
+}
+
 function serviceHeaders(
   supabaseSecretKey: string
 ) {
@@ -102,15 +123,24 @@ export async function POST(
     const lemonStoreId =
       process.env.LEMON_SQUEEZY_STORE_ID;
 
+    const lemonTestMode =
+      parseBooleanEnv(
+        process.env.LEMON_SQUEEZY_TEST_MODE
+      );
+
     const supabaseUrl =
       process.env.NEXT_PUBLIC_SUPABASE_URL;
 
     const supabaseSecretKey =
       process.env.SUPABASE_SECRET_KEY;
 
-    if (!webhookSecret) {
+    if (
+      !webhookSecret ||
+      !lemonStoreId ||
+      lemonTestMode === null
+    ) {
       console.error(
-        "LEMON_WEBHOOK_SECRET_MISSING"
+        "LEMON_WEBHOOK_CONFIG_MISSING"
       );
 
       return NextResponse.json(
@@ -281,7 +311,6 @@ export async function POST(
     }
 
     if (
-      lemonStoreId &&
       String(
         attributes?.store_id ?? ""
       ) !== String(lemonStoreId)
@@ -301,6 +330,33 @@ export async function POST(
         },
         {
           status: 403,
+        }
+      );
+    }
+
+    if (
+      attributes?.test_mode !==
+      lemonTestMode
+    ) {
+      console.error(
+        "LEMON_WEBHOOK_TEST_MODE_MISMATCH",
+        {
+          expectedTestMode:
+            lemonTestMode,
+          receivedTestMode:
+            attributes?.test_mode ??
+            null,
+          orderId,
+        }
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Webhook test mode does not match the configured payment mode.",
+        },
+        {
+          status: 409,
         }
       );
     }
@@ -419,6 +475,39 @@ export async function POST(
       );
     }
 
+    const customOrderNumber =
+      typeof customData?.order_number ===
+      "string"
+        ? customData.order_number.trim()
+        : "";
+
+    if (
+      customOrderNumber &&
+      customOrderNumber !==
+        order.order_number
+    ) {
+      console.error(
+        "LEMON_WEBHOOK_ORDER_NUMBER_MISMATCH",
+        {
+          orderId,
+          expectedOrderNumber:
+            order.order_number,
+          receivedOrderNumber:
+            customOrderNumber,
+        }
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Webhook order number does not match the local order.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
     const expectedTotalCents =
       Math.round(
         Number(order.total) * 100
@@ -456,13 +545,62 @@ export async function POST(
       );
     }
 
-    const needsOrderUpdate =
+    const currentStatus =
       String(
         order.status || ""
-      ).toUpperCase() !== "PAID" ||
-      order.payment_provider !==
+      ).toUpperCase();
+
+    const currentProvider =
+      String(
+        order.payment_provider || ""
+      ).toUpperCase();
+
+    const currentReference =
+      String(
+        order.payment_reference || ""
+      ).trim();
+
+    if (
+      currentStatus === "PAID" &&
+      (
+        currentProvider !==
+          "LEMON_SQUEEZY" ||
+        (
+          currentReference &&
+          currentReference !==
+            lemonOrderId
+        )
+      )
+    ) {
+      console.error(
+        "LEMON_WEBHOOK_PAID_ORDER_CONFLICT",
+        {
+          orderId,
+          currentProvider:
+            order.payment_provider,
+          currentReference:
+            order.payment_reference,
+          receivedReference:
+            lemonOrderId,
+        }
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "This order is already paid with different payment metadata.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+    const needsOrderUpdate =
+      currentStatus !== "PAID" ||
+      currentProvider !==
         "LEMON_SQUEEZY" ||
-      order.payment_reference !==
+      currentReference !==
         lemonOrderId;
 
     let finalOrder = order;
@@ -779,6 +917,8 @@ export async function POST(
         testMode:
           attributes?.test_mode ??
           null,
+        configuredTestMode:
+          lemonTestMode,
       }
     );
 

@@ -797,557 +797,524 @@ export default function AdminProducts() {
     }
   }
 
+
   return (
-    <main className="min-h-screen bg-black text-white">
-      {/* HEADER */}
+    <main className="min-h-screen bg-[#eef3f8] text-[#081529]">
+      <AdminHeader />
 
-      <header className="border-b border-white/10">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-5">
+      <section
+        className="relative overflow-hidden bg-[#071426] text-white"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px), radial-gradient(circle at 8% 100%, rgba(0,190,220,.15), transparent 30%), radial-gradient(circle at 92% 14%, rgba(255,101,0,.18), transparent 28%)",
+          backgroundSize: "64px 64px, 64px 64px, auto, auto",
+        }}
+      >
+        <div className="mx-auto grid max-w-[1600px] gap-9 px-5 py-12 md:px-10 md:py-16 lg:grid-cols-[1.1fr_.9fr] lg:items-end">
           <div>
-            <Link
-              href="/admin"
-              className="text-2xl font-bold"
-            >
-              Zonix
-              <span className="text-emerald-400">
-                Assets
-              </span>
-            </Link>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-orange-300">
+              <span className="h-2 w-2 rounded-full bg-[#ff6500]" />
+              Product Center
+            </div>
 
-            <p className="mt-1 text-xs text-white/35">
-              Product Management
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <Link
-              href="/admin"
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm transition hover:bg-white/10"
-            >
-              Dashboard
-            </Link>
-
-            <Link
-              href="/products"
-              className="rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-300"
-            >
-              View Store
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        {/* TITLE */}
-
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-          <div>
-            <p className="text-sm text-emerald-400">
-              Admin
-            </p>
-
-            <h1 className="mt-1 text-4xl font-bold">
-              Manage Products
+            <h1 className="mt-6 max-w-4xl text-4xl font-black tracking-[-0.04em] sm:text-5xl lg:text-6xl">
+              Build and manage your
+              <span className="block text-white/45">digital product catalog.</span>
             </h1>
 
-            <p className="mt-3 text-white/45">
-              Create, edit, feature,
-              activate and manage digital
-              products.
+            <p className="mt-5 max-w-3xl text-base leading-8 text-white/55 md:text-lg">
+              Create products, upload files and previews, control visibility,
+              feature key assets and keep the storefront catalog organized.
             </p>
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={loadProducts}
+                disabled={loading}
+                className="rounded-2xl bg-[#ff6500] px-6 py-3.5 font-black text-white shadow-[0_14px_34px_rgba(255,101,0,.22)] transition hover:bg-[#ff7420] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? "Refreshing..." : "Refresh Products"}
+              </button>
+
+              <Link
+                href="/products"
+                className="rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-3.5 font-black text-white transition hover:bg-white/10"
+              >
+                View Store
+              </Link>
+            </div>
           </div>
 
-          <button
-            onClick={loadProducts}
-            className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold transition hover:bg-white/10"
-          >
-            Refresh Products
-          </button>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <HeroMetric
+              label="Products"
+              value={String(products.length)}
+              helper={`${products.filter((item) => item.isActive).length} active`}
+            />
+            <HeroMetric
+              label="Featured"
+              value={String(products.filter((item) => item.featured).length)}
+              helper="Highlighted products"
+            />
+            <HeroMetric
+              label="With files"
+              value={String(products.filter((item) => item.filePath).length)}
+              helper="Downloadable assets ready"
+            />
+            <HeroMetric
+              label="With images"
+              value={String(products.filter((item) => item.imageUrl).length)}
+              helper="Products with cover images"
+              accent
+            />
+          </div>
         </div>
+      </section>
 
-        {/* MESSAGES */}
+      <div className="mx-auto max-w-[1600px] px-5 py-10 md:px-10 md:py-12">
+        {(error || success) && (
+          <div className="mb-8 space-y-3">
+            {error && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold text-red-700">
+                {error}
+              </div>
+            )}
 
-        {error && (
-          <div className="mt-6 rounded-xl border border-red-400/20 bg-red-400/10 px-5 py-4 text-sm text-red-300">
-            {error}
+            {success && (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700">
+                {success}
+              </div>
+            )}
           </div>
         )}
 
-        {success && (
-          <div className="mt-6 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-5 py-4 text-sm text-emerald-300">
-            {success}
-          </div>
-        )}
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            label="Total products"
+            value={String(products.length)}
+            helper="All catalog entries"
+            tone="orange"
+          />
+          <StatCard
+            label="Active"
+            value={String(products.filter((item) => item.isActive).length)}
+            helper="Visible for sale"
+            tone="green"
+          />
+          <StatCard
+            label="Featured"
+            value={String(products.filter((item) => item.featured).length)}
+            helper="Highlighted in store"
+            tone="violet"
+          />
+          <StatCard
+            label="Inactive"
+            value={String(products.filter((item) => !item.isActive).length)}
+            helper="Hidden from store"
+            tone="slate"
+          />
+        </section>
 
-        {/* FORM */}
-
-        <section className="mt-8 rounded-[28px] border border-white/10 bg-white/[0.03] p-6 md:p-8">
-          <div className="flex items-center justify-between gap-4">
+        <section className="mt-8 overflow-hidden rounded-[30px] border border-[#dce4ef] bg-white shadow-[0_20px_60px_rgba(20,35,60,.06)]">
+          <div className="flex flex-col gap-4 border-b border-[#e7edf4] p-6 md:flex-row md:items-start md:justify-between md:p-8">
             <div>
-              <p className="text-sm text-emerald-400">
-                {editingId
-                  ? "Editing Product"
-                  : "New Product"}
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-[#ff6500]">
+                {editingId ? "Editing product" : "New product"}
               </p>
-
-              <h2 className="mt-1 text-2xl font-bold">
-                {editingId
-                  ? "Update Product"
-                  : "Add Product"}
+              <h2 className="mt-2 text-3xl font-black tracking-tight">
+                {editingId ? "Update product" : "Create product"}
               </h2>
+              <p className="mt-2 max-w-2xl text-[#718099]">
+                Add product information, downloadable files and up to three
+                preview images.
+              </p>
             </div>
 
             {editingId && (
               <button
-                onClick={resetForm}
                 type="button"
-                className="rounded-xl border border-white/10 px-4 py-2 text-sm text-white/60 transition hover:bg-white/5"
+                onClick={resetForm}
+                className="w-fit rounded-2xl border border-[#dce4ef] bg-[#f8fafc] px-5 py-3 text-sm font-black text-[#60718e] transition hover:bg-white hover:text-[#081529]"
               >
                 Cancel Edit
               </button>
             )}
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="mt-7 space-y-5"
-          >
-            <div className="grid gap-5 md:grid-cols-2">
-              <Field
-                label="Product Title"
-                value={form.title}
-                placeholder="Nova Dashboard UI"
-                onChange={
-                  handleTitleChange
-                }
-              />
-
-              <Field
-                label="Slug"
-                value={form.slug}
-                placeholder="nova-dashboard-ui"
-                onChange={(value) =>
-                  handleChange(
-                    "slug",
-                    createSlug(value)
-                  )
-                }
-              />
-
-              <div>
-                <label className="text-sm text-white/45">
-                  Category
-                </label>
-
-                <select
-                  value={form.category}
-                  onChange={(event) =>
-                    handleChange(
-                      "category",
-                      event.target.value
-                    )
-                  }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400/40"
+          <form onSubmit={handleSubmit} className="p-6 md:p-8">
+            <div className="grid gap-8 xl:grid-cols-[1.08fr_.92fr]">
+              <div className="space-y-7">
+                <FormSection
+                  number="01"
+                  title="Product details"
+                  helper="Core information customers will see in the store."
                 >
-                  <option value="">
-                    Select a category
-                  </option>
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <Field
+                      label="Product title"
+                      value={form.title}
+                      placeholder="Nova Dashboard UI"
+                      onChange={handleTitleChange}
+                    />
 
-                  {PRODUCT_CATEGORIES.map((category) => (
-                    <option
-                      key={category}
-                      value={category}
-                    >
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <Field
-                label="Price"
-                value={form.price}
-                type="number"
-                placeholder="29"
-                onChange={(value) =>
-                  handleChange(
-                    "price",
-                    value
-                  )
-                }
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-white/45">
-                Description
-              </label>
-
-              <textarea
-                value={
-                  form.description
-                }
-                onChange={(event) =>
-                  handleChange(
-                    "description",
-                    event.target.value
-                  )
-                }
-                rows={5}
-                placeholder="Describe your digital product..."
-                className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black px-4 py-3 text-white outline-none transition placeholder:text-white/20 focus:border-emerald-400/40"
-              />
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-black p-5">
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div>
-                  <p className="text-sm text-white/45">
-                    Product Download File
-                  </p>
-
-                  <p className="mt-1 text-xs leading-5 text-white/30">
-                    Upload the digital product directly to the private{" "}
-                    <strong className="text-white/50">
-                      product-files
-                    </strong>{" "}
-                    bucket. Maximum file size: 50 MB.
-                  </p>
-                </div>
-
-                <label
-                  className={`inline-flex cursor-pointer items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 text-sm font-semibold text-black transition hover:bg-emerald-300 ${
-                    uploadingFile
-                      ? "pointer-events-none opacity-50"
-                      : ""
-                  }`}
-                >
-                  {uploadingFile
-                    ? "Uploading File..."
-                    : form.filePath.trim()
-                    ? "Replace File"
-                    : "Choose & Upload File"}
-
-                  <input
-                    type="file"
-                    disabled={uploadingFile}
-                    className="hidden"
-                    onChange={(event) => {
-                      const file =
-                        event.target.files?.[0];
-
-                      if (file) {
-                        uploadProductFile(file);
+                    <Field
+                      label="Slug"
+                      value={form.slug}
+                      placeholder="nova-dashboard-ui"
+                      onChange={(value) =>
+                        handleChange("slug", createSlug(value))
                       }
+                    />
 
-                      event.currentTarget.value =
-                        "";
-                    }}
-                  />
-                </label>
-              </div>
+                    <div>
+                      <label className="text-sm font-black text-[#53627a]">
+                        Category
+                      </label>
 
-              <div className="mt-4">
-                <label className="text-xs text-white/35">
-                  Storage File Path
-                </label>
-
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="text"
-                    value={form.filePath}
-                    onChange={(event) =>
-                      handleChange(
-                        "filePath",
-                        event.target.value
-                      )
-                    }
-                    placeholder="products/your-product.zip"
-                    className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-emerald-400/40"
-                  />
-
-                  {form.filePath.trim() && (
-                    <button
-                      type="button"
-                      disabled={uploadingFile}
-                      onClick={() =>
-                        handleChange(
-                          "filePath",
-                          ""
-                        )
-                      }
-                      className="rounded-xl border border-red-400/20 bg-red-400/5 px-4 py-3 text-sm text-red-300 transition hover:bg-red-400/10 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-
-                {form.filePath.trim() ? (
-                  <p className="mt-2 break-all text-xs text-emerald-300/70">
-                    Assigned: {form.filePath}
-                  </p>
-                ) : (
-                  <p className="mt-2 text-xs text-white/25">
-                    No product file assigned yet.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm text-white/45">
-                Product Images
-              </p>
-
-              <p className="mt-1 text-xs text-white/30">
-                Upload up to 3 images directly from your computer.
-                Image 1 is the main cover image. You can still paste
-                a public URL manually if needed. Recommended ratio:
-                4:3, for example 1200 × 900 px.
-              </p>
-            </div>
-
-            <div className="grid gap-5 lg:grid-cols-3">
-              <ImageUploadField
-                label="Image 1 (Main)"
-                value={form.imageUrl}
-                uploading={uploadingImage === 1}
-                deleting={deletingImage === 1}
-                onUpload={(file) =>
-                  uploadProductImage(file, 1)
-                }
-                onChange={(value) =>
-                  handleChange("imageUrl", value)
-                }
-                onClear={() =>
-                  deleteProductImage(
-                    form.imageUrl,
-                    1
-                  )
-                }
-              />
-
-              <ImageUploadField
-                label="Image 2"
-                value={form.imageUrl2}
-                uploading={uploadingImage === 2}
-                deleting={deletingImage === 2}
-                onUpload={(file) =>
-                  uploadProductImage(file, 2)
-                }
-                onChange={(value) =>
-                  handleChange("imageUrl2", value)
-                }
-                onClear={() =>
-                  deleteProductImage(
-                    form.imageUrl2,
-                    2
-                  )
-                }
-              />
-
-              <ImageUploadField
-                label="Image 3"
-                value={form.imageUrl3}
-                uploading={uploadingImage === 3}
-                deleting={deletingImage === 3}
-                onUpload={(file) =>
-                  uploadProductImage(file, 3)
-                }
-                onChange={(value) =>
-                  handleChange("imageUrl3", value)
-                }
-                onClear={() =>
-                  deleteProductImage(
-                    form.imageUrl3,
-                    3
-                  )
-                }
-              />
-            </div>
-
-            {(form.imageUrl.trim() ||
-              form.imageUrl2.trim() ||
-              form.imageUrl3.trim()) && (
-              <div className="grid gap-4 md:grid-cols-3">
-                {[
-                  {
-                    label: "Main Image",
-                    url: form.imageUrl.trim(),
-                  },
-                  {
-                    label: "Preview 2",
-                    url: form.imageUrl2.trim(),
-                  },
-                  {
-                    label: "Preview 3",
-                    url: form.imageUrl3.trim(),
-                  },
-                ].map((image) => (
-                  <div
-                    key={image.label}
-                    className="overflow-hidden rounded-2xl border border-white/10 bg-black"
-                  >
-                    <div className="border-b border-white/10 px-4 py-3 text-xs text-white/40">
-                      {image.label}
+                      <select
+                        value={form.category}
+                        onChange={(event) =>
+                          handleChange("category", event.target.value)
+                        }
+                        className="mt-2 w-full rounded-2xl border border-[#dce4ef] bg-[#f7f9fc] px-4 py-3.5 font-semibold text-[#081529] outline-none transition focus:border-[#ff9b5c] focus:bg-white focus:ring-4 focus:ring-orange-100"
+                      >
+                        <option value="">Select a category</option>
+                        {PRODUCT_CATEGORIES.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
-                    {image.url ? (
-                      <img
-                        src={image.url}
-                        alt={image.label}
-                        className="h-48 w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-48 items-center justify-center text-sm text-white/20">
-                        No image
-                      </div>
-                    )}
+                    <Field
+                      label="Price"
+                      value={form.price}
+                      type="number"
+                      placeholder="29"
+                      onChange={(value) =>
+                        handleChange("price", value)
+                      }
+                    />
                   </div>
-                ))}
+
+                  <div className="mt-5">
+                    <label className="text-sm font-black text-[#53627a]">
+                      Description
+                    </label>
+
+                    <textarea
+                      value={form.description}
+                      onChange={(event) =>
+                        handleChange("description", event.target.value)
+                      }
+                      rows={6}
+                      placeholder="Describe your digital product..."
+                      className="mt-2 w-full resize-none rounded-2xl border border-[#dce4ef] bg-[#f7f9fc] px-4 py-3.5 leading-7 text-[#081529] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#ff9b5c] focus:bg-white focus:ring-4 focus:ring-orange-100"
+                    />
+                  </div>
+                </FormSection>
+
+                <FormSection
+                  number="02"
+                  title="Download file"
+                  helper="Upload the digital asset customers receive after purchase."
+                >
+                  <div className="rounded-[24px] border border-[#dce4ef] bg-[#f7f9fc] p-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-black text-[#081529]">
+                          Product download file
+                        </p>
+                        <p className="mt-2 max-w-xl text-sm leading-6 text-[#718099]">
+                          Upload directly to the private{" "}
+                          <strong>product-files</strong> bucket. Maximum file
+                          size: 50 MB.
+                        </p>
+                      </div>
+
+                      <label
+                        className={`inline-flex shrink-0 cursor-pointer items-center justify-center rounded-2xl bg-[#081529] px-5 py-3.5 text-sm font-black text-white transition hover:bg-[#ff6500] ${
+                          uploadingFile
+                            ? "pointer-events-none opacity-50"
+                            : ""
+                        }`}
+                      >
+                        {uploadingFile
+                          ? "Uploading..."
+                          : form.filePath.trim()
+                            ? "Replace File"
+                            : "Upload File"}
+
+                        <input
+                          type="file"
+                          disabled={uploadingFile}
+                          className="hidden"
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+
+                            if (file) {
+                              uploadProductFile(file);
+                            }
+
+                            event.currentTarget.value = "";
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="mt-5">
+                      <label className="text-xs font-black uppercase tracking-[0.14em] text-[#9aa8bb]">
+                        Storage file path
+                      </label>
+
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                        <input
+                          type="text"
+                          value={form.filePath}
+                          onChange={(event) =>
+                            handleChange("filePath", event.target.value)
+                          }
+                          placeholder="products/your-product.zip"
+                          className="min-w-0 flex-1 rounded-2xl border border-[#dce4ef] bg-white px-4 py-3.5 text-sm font-semibold text-[#081529] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#ff9b5c] focus:ring-4 focus:ring-orange-100"
+                        />
+
+                        {form.filePath.trim() && (
+                          <button
+                            type="button"
+                            disabled={uploadingFile}
+                            onClick={() =>
+                              handleChange("filePath", "")
+                            }
+                            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+
+                      <p className="mt-2 break-all text-xs text-[#9aa8bb]">
+                        {form.filePath.trim()
+                          ? `Assigned: ${form.filePath}`
+                          : "No product file assigned yet."}
+                      </p>
+                    </div>
+                  </div>
+                </FormSection>
               </div>
-            )}
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex cursor-pointer items-center justify-between rounded-xl border border-white/10 bg-black px-5 py-4">
-                <div>
-                  <p className="font-medium">
-                    Active Product
+              <div className="space-y-7">
+                <FormSection
+                  number="03"
+                  title="Product images"
+                  helper="Image 1 is the main cover. Recommended ratio: 4:3."
+                >
+                  <div className="grid gap-4">
+                    <ImageUploadField
+                      label="Image 1 (Main)"
+                      value={form.imageUrl}
+                      uploading={uploadingImage === 1}
+                      deleting={deletingImage === 1}
+                      onUpload={(file) =>
+                        uploadProductImage(file, 1)
+                      }
+                      onChange={(value) =>
+                        handleChange("imageUrl", value)
+                      }
+                      onClear={() =>
+                        deleteProductImage(form.imageUrl, 1)
+                      }
+                    />
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <ImageUploadField
+                        label="Image 2"
+                        value={form.imageUrl2}
+                        uploading={uploadingImage === 2}
+                        deleting={deletingImage === 2}
+                        onUpload={(file) =>
+                          uploadProductImage(file, 2)
+                        }
+                        onChange={(value) =>
+                          handleChange("imageUrl2", value)
+                        }
+                        onClear={() =>
+                          deleteProductImage(form.imageUrl2, 2)
+                        }
+                      />
+
+                      <ImageUploadField
+                        label="Image 3"
+                        value={form.imageUrl3}
+                        uploading={uploadingImage === 3}
+                        deleting={deletingImage === 3}
+                        onUpload={(file) =>
+                          uploadProductImage(file, 3)
+                        }
+                        onChange={(value) =>
+                          handleChange("imageUrl3", value)
+                        }
+                        onClear={() =>
+                          deleteProductImage(form.imageUrl3, 3)
+                        }
+                      />
+                    </div>
+                  </div>
+                </FormSection>
+
+                <FormSection
+                  number="04"
+                  title="Publishing"
+                  helper="Control store visibility and featured placement."
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <ToggleCard
+                      title="Active product"
+                      helper="Product can be sold in the store."
+                      checked={form.isActive}
+                      onChange={(checked) =>
+                        handleChange("isActive", checked)
+                      }
+                    />
+
+                    <ToggleCard
+                      title="Featured"
+                      helper="Highlight this product in the store."
+                      checked={form.featured}
+                      onChange={(checked) =>
+                        handleChange("featured", checked)
+                      }
+                    />
+                  </div>
+                </FormSection>
+
+                <div className="rounded-[26px] bg-[#071426] p-6 text-white">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-300">
+                    Ready to publish
+                  </p>
+                  <h3 className="mt-2 text-2xl font-black">
+                    {editingId ? "Save product changes" : "Create product"}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-white/50">
+                    Review the product title, pricing, file and cover image
+                    before saving.
                   </p>
 
-                  <p className="mt-1 text-xs text-white/35">
-                    Product can be sold in
-                    the marketplace.
-                  </p>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="mt-5 w-full rounded-2xl bg-[#ff6500] px-6 py-4 font-black text-white transition hover:bg-[#ff7420] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {saving
+                      ? "Saving..."
+                      : editingId
+                        ? "Save Product Changes"
+                        : "Create Product"}
+                  </button>
                 </div>
-
-                <input
-                  type="checkbox"
-                  checked={
-                    form.isActive
-                  }
-                  onChange={(event) =>
-                    handleChange(
-                      "isActive",
-                      event.target.checked
-                    )
-                  }
-                  className="h-5 w-5 accent-emerald-400"
-                />
-              </label>
-
-              <label className="flex cursor-pointer items-center justify-between rounded-xl border border-white/10 bg-black px-5 py-4">
-                <div>
-                  <p className="font-medium">
-                    Featured
-                  </p>
-
-                  <p className="mt-1 text-xs text-white/35">
-                    Highlight this product
-                    in the store.
-                  </p>
-                </div>
-
-                <input
-                  type="checkbox"
-                  checked={
-                    form.featured
-                  }
-                  onChange={(event) =>
-                    handleChange(
-                      "featured",
-                      event.target.checked
-                    )
-                  }
-                  className="h-5 w-5 accent-emerald-400"
-                />
-              </label>
+              </div>
             </div>
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-xl bg-emerald-400 px-7 py-4 font-semibold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {saving
-                ? "Saving..."
-                : editingId
-                ? "Save Product Changes"
-                : "Create Product"}
-            </button>
           </form>
         </section>
 
-        {/* PRODUCTS */}
-
-        <section className="mt-10 rounded-[28px] border border-white/10 bg-white/[0.03]">
-          <div className="flex flex-col gap-5 border-b border-white/10 p-6 md:flex-row md:items-center md:justify-between md:p-8">
+        <section className="mt-10 overflow-hidden rounded-[30px] border border-[#dce4ef] bg-white shadow-[0_20px_60px_rgba(20,35,60,.06)]">
+          <div className="grid gap-5 border-b border-[#e7edf4] p-6 md:grid-cols-[1fr_auto] md:items-end md:p-8">
             <div>
-              <p className="text-sm text-emerald-400">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-[#ff6500]">
                 Catalog
               </p>
-
-              <h2 className="mt-1 text-2xl font-bold">
-                All Products
+              <h2 className="mt-2 text-3xl font-black tracking-tight">
+                All products
               </h2>
-
-              <p className="mt-2 text-sm text-white/35">
-                {products.length} product
-                {products.length === 1
-                  ? ""
-                  : "s"}{" "}
-                in Zonix Assets
+              <p className="mt-2 text-[#718099]">
+                {products.length} product{products.length === 1 ? "" : "s"} in
+                Zonix Assets.
               </p>
             </div>
 
-            <input
-              value={search}
-              onChange={(event) =>
-                setSearch(
-                  event.target.value
-                )
-              }
-              placeholder="Search products..."
-              className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm outline-none placeholder:text-white/20 focus:border-emerald-400/40 md:max-w-sm"
-            />
+            <div className="w-full md:w-[390px]">
+              <label className="mb-2 block text-sm font-black text-[#60718e]">
+                Search
+              </label>
+              <input
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+                placeholder="Search products..."
+                className="w-full rounded-2xl border border-[#dce4ef] bg-[#f7f9fc] px-5 py-4 text-[#081529] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#ff9b5c] focus:bg-white focus:ring-4 focus:ring-orange-100"
+              />
+            </div>
           </div>
 
           {loading ? (
-            <div className="py-16 text-center text-sm text-white/40">
-              Loading products...
+            <div className="grid min-h-[320px] place-items-center">
+              <div className="text-center">
+                <div className="mx-auto h-11 w-11 animate-spin rounded-full border-4 border-[#e7edf4] border-t-[#ff6500]" />
+                <p className="mt-5 font-semibold text-[#718099]">
+                  Loading products...
+                </p>
+              </div>
             </div>
-          ) : filteredProducts.length ===
-            0 ? (
-            <div className="py-16 text-center">
-              <h3 className="font-semibold">
-                No products found
-              </h3>
-
-              <p className="mt-2 text-sm text-white/35">
-                Create your first product
-                using the form above.
-              </p>
+          ) : filteredProducts.length === 0 ? (
+            <div className="grid min-h-[320px] place-items-center p-8 text-center">
+              <div>
+                <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-orange-50 text-2xl text-[#ff6500]">
+                  ✦
+                </div>
+                <h3 className="mt-5 text-2xl font-black">
+                  No products found
+                </h3>
+                <p className="mt-2 text-[#718099]">
+                  Create your first product using the form above.
+                </p>
+              </div>
             </div>
           ) : (
-            <div className="divide-y divide-white/10">
-              {filteredProducts.map(
-                (product) => (
-                  <div
+            <div className="divide-y divide-[#e7edf4]">
+              {filteredProducts.map((product) => {
+                const imageCount = [
+                  product.imageUrl,
+                  product.imageUrl2,
+                  product.imageUrl3,
+                ].filter(Boolean).length;
+
+                return (
+                  <article
                     key={product.id}
-                    className="p-6 md:p-8"
+                    className="p-6 transition hover:bg-[#fbfcfe] md:p-8"
                   >
-                    <div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-center">
+                    <div className="grid gap-6 xl:grid-cols-[170px_1fr_auto] xl:items-center">
+                      <div className="overflow-hidden rounded-[22px] border border-[#e2e9f1] bg-[#f7f9fc]">
+                        {product.imageUrl ? (
+                          <img
+                            src={product.imageUrl}
+                            alt={product.title}
+                            className="aspect-[4/3] w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex aspect-[4/3] items-center justify-center">
+                            <div className="text-center">
+                              <div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-orange-50 text-[#ff6500]">
+                                ✦
+                              </div>
+                              <p className="mt-2 text-xs font-bold text-[#9aa8bb]">
+                                No cover image
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-lg font-semibold">
-                            {
-                              product.title
-                            }
+                          <h3 className="text-xl font-black tracking-tight">
+                            {product.title}
                           </h3>
 
                           {product.featured && (
-                            <span className="rounded-full border border-purple-400/20 bg-purple-400/10 px-3 py-1 text-xs text-purple-300">
+                            <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11px] font-black text-violet-700">
                               FEATURED
                             </span>
                           )}
@@ -1355,164 +1322,295 @@ export default function AdminProducts() {
                           <span
                             className={
                               product.isActive
-                                ? "rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-300"
-                                : "rounded-full border border-red-400/20 bg-red-400/10 px-3 py-1 text-xs text-red-300"
+                                ? "rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700"
+                                : "rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-black text-red-700"
                             }
                           >
-                            {product.isActive
-                              ? "ACTIVE"
-                              : "INACTIVE"}
+                            {product.isActive ? "ACTIVE" : "INACTIVE"}
                           </span>
                         </div>
 
-                        <p className="mt-2 text-sm text-white/45">
-                          /products/
-                          {product.slug}
+                        <p className="mt-2 text-sm font-semibold text-[#718099]">
+                          /products/{product.slug}
                         </p>
 
-                        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/40">
-                          <span>
-                            Category:{" "}
-                            {
-                              product.category
-                            }
-                          </span>
-
-                          <span>
-                            Price:{" "}
-                            <strong className="text-white">
-                              {formatMoney(
-                                product.price
-                              )}
-                            </strong>
-                          </span>
-
-                          <span>
-                            File:{" "}
-                            {product.filePath ||
-                              "Not assigned"}
-                          </span>
-
-                          <span>
-                            Images:{" "}
-                            {
-                              [
-                                product.imageUrl,
-                                product.imageUrl2,
-                                product.imageUrl3,
-                              ].filter(Boolean).length
-                            }
-                            /3 assigned
-                          </span>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <MetaPill>{product.category}</MetaPill>
+                          <MetaPill>{formatMoney(product.price)}</MetaPill>
+                          <MetaPill>
+                            {product.filePath ? "File assigned" : "No file"}
+                          </MetaPill>
+                          <MetaPill>
+                            {imageCount}/3 images
+                          </MetaPill>
                         </div>
 
-                        {(product.imageUrl ||
-                          product.imageUrl2 ||
-                          product.imageUrl3) && (
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            {[
-                              product.imageUrl,
-                              product.imageUrl2,
-                              product.imageUrl3,
-                            ].map((url, index) =>
-                              url ? (
+                        {(product.imageUrl2 || product.imageUrl3) && (
+                          <div className="mt-4 flex gap-2">
+                            {[product.imageUrl2, product.imageUrl3]
+                              .filter(Boolean)
+                              .map((url, index) => (
                                 <div
-                                  key={`${product.id}-image-${index + 1}`}
-                                  className="h-20 w-28 overflow-hidden rounded-xl border border-white/10 bg-black"
+                                  key={`${product.id}-${index}`}
+                                  className="h-14 w-20 overflow-hidden rounded-xl border border-[#e2e9f1]"
                                 >
                                   <img
-                                    src={url}
-                                    alt={`${product.title} preview ${index + 1}`}
+                                    src={String(url)}
+                                    alt={`${product.title} preview ${index + 2}`}
                                     className="h-full w-full object-cover"
                                   />
                                 </div>
-                              ) : null
-                            )}
+                              ))}
                           </div>
                         )}
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 xl:max-w-[320px] xl:justify-end">
                         <Link
                           href={`/products/${product.slug}`}
                           target="_blank"
-                          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm transition hover:bg-white/10"
+                          className="rounded-xl border border-[#dce4ef] bg-white px-4 py-2.5 text-sm font-black text-[#53627a] transition hover:border-[#cbd6e4] hover:text-[#081529]"
                         >
                           View
                         </Link>
 
                         <button
                           type="button"
-                          onClick={() =>
-                            startEdit(
-                              product
-                            )
-                          }
-                          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm transition hover:bg-white/10"
+                          onClick={() => startEdit(product)}
+                          className="rounded-xl bg-[#081529] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#ff6500]"
                         >
                           Edit
                         </button>
 
                         <button
                           type="button"
-                          onClick={() =>
-                            toggleFeatured(
-                              product
-                            )
-                          }
-                          className="rounded-xl border border-purple-400/20 bg-purple-400/5 px-4 py-2 text-sm text-purple-300 transition hover:bg-purple-400/10"
+                          onClick={() => toggleFeatured(product)}
+                          className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-black text-violet-700 transition hover:bg-violet-100"
                         >
-                          {product.featured
-                            ? "Unfeature"
-                            : "Feature"}
+                          {product.featured ? "Unfeature" : "Feature"}
                         </button>
 
                         <button
                           type="button"
-                          onClick={() =>
-                            toggleActive(
-                              product
-                            )
-                          }
+                          onClick={() => toggleActive(product)}
                           className={
                             product.isActive
-                              ? "rounded-xl border border-yellow-400/20 bg-yellow-400/5 px-4 py-2 text-sm text-yellow-300 transition hover:bg-yellow-400/10"
-                              : "rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-sm text-emerald-300 transition hover:bg-emerald-400/10"
+                              ? "rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-700 transition hover:bg-amber-100"
+                              : "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700 transition hover:bg-emerald-100"
                           }
                         >
-                          {product.isActive
-                            ? "Deactivate"
-                            : "Activate"}
+                          {product.isActive ? "Deactivate" : "Activate"}
                         </button>
 
                         <button
                           type="button"
-                          disabled={
-                            deleteId ===
-                            product.id
-                          }
-                          onClick={() =>
-                            handleDelete(
-                              product
-                            )
-                          }
-                          className="rounded-xl border border-red-400/20 bg-red-400/5 px-4 py-2 text-sm text-red-300 transition hover:bg-red-400/10 disabled:opacity-40"
+                          disabled={deleteId === product.id}
+                          onClick={() => handleDelete(product)}
+                          className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:opacity-40"
                         >
-                          {deleteId ===
-                          product.id
+                          {deleteId === product.id
                             ? "Deleting..."
                             : "Delete"}
                         </button>
                       </div>
                     </div>
-                  </div>
-                )
-              )}
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>
       </div>
     </main>
+  );
+}
+
+function AdminHeader() {
+  return (
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#111a31]/95 text-white backdrop-blur-xl">
+      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-5 px-5 py-4 md:px-10">
+        <Link href="/admin" className="flex min-w-0 items-center gap-3">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white text-lg font-black text-[#081529] shadow-sm">
+            ZA
+          </div>
+
+          <div className="min-w-0">
+            <div className="truncate text-2xl font-black tracking-tight">
+              Zonix<span className="text-cyan-400">Assets</span>
+            </div>
+            <p className="mt-0.5 text-[11px] font-bold uppercase tracking-[0.24em] text-white/40">
+              Admin Products
+            </p>
+          </div>
+        </Link>
+
+        <nav className="hidden items-center gap-2 xl:flex">
+          <AdminNav href="/admin">Dashboard</AdminNav>
+          <AdminNav href="/admin/products" active>
+            Products
+          </AdminNav>
+          <AdminNav href="/admin/orders">Orders</AdminNav>
+          <AdminNav href="/admin/customers">Customers</AdminNav>
+          <AdminNav href="/admin/analytics">Analytics</AdminNav>
+          <AdminNav href="/admin/audit-logs">Audit Logs</AdminNav>
+        </nav>
+
+        <Link
+          href="/products"
+          className="shrink-0 rounded-2xl bg-[#ff6500] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(255,101,0,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ff7420]"
+        >
+          View Store
+        </Link>
+      </div>
+    </header>
+  );
+}
+
+function AdminNav({
+  href,
+  children,
+  active = false,
+}: {
+  href: string;
+  children: React.ReactNode;
+  active?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={
+        active
+          ? "rounded-2xl border border-orange-400/30 bg-orange-400/10 px-4 py-2.5 text-sm font-black text-orange-300"
+          : "rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
+      }
+    >
+      {children}
+    </Link>
+  );
+}
+
+function HeroMetric({
+  label,
+  value,
+  helper,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="min-w-0 rounded-[26px] border border-white/10 bg-white/[0.06] p-5 backdrop-blur-sm">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-300">
+        {label}
+      </p>
+      <p
+        className={`mt-3 break-words text-2xl font-black tracking-tight ${
+          accent ? "text-[#ff7a22]" : "text-white"
+        }`}
+      >
+        {value}
+      </p>
+      <p className="mt-2 break-words text-sm leading-6 text-white/45">
+        {helper}
+      </p>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  helper,
+  tone,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  tone: "orange" | "green" | "violet" | "slate";
+}) {
+  const tones = {
+    orange: "bg-orange-50 text-[#ff6500]",
+    green: "bg-emerald-50 text-emerald-600",
+    violet: "bg-violet-50 text-violet-600",
+    slate: "bg-slate-100 text-slate-700",
+  };
+
+  return (
+    <div className="rounded-[28px] border border-[#dce4ef] bg-white p-6 shadow-[0_16px_50px_rgba(20,35,60,.05)]">
+      <div className={`grid h-12 w-12 place-items-center rounded-2xl text-lg font-black ${tones[tone]}`}>
+        ✦
+      </div>
+      <p className="mt-5 font-bold text-[#60718e]">{label}</p>
+      <p className="mt-2 text-4xl font-black tracking-tight">{value}</p>
+      <p className="mt-2 text-sm text-[#94a1b5]">{helper}</p>
+    </div>
+  );
+}
+
+function FormSection({
+  number,
+  title,
+  helper,
+  children,
+}: {
+  number: string;
+  title: string;
+  helper: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-[26px] border border-[#dce4ef] bg-white p-5 md:p-6">
+      <div className="mb-5 flex gap-4">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-orange-50 text-sm font-black text-[#ff6500]">
+          {number}
+        </div>
+
+        <div>
+          <h3 className="text-xl font-black">{title}</h3>
+          <p className="mt-1 text-sm leading-6 text-[#718099]">{helper}</p>
+        </div>
+      </div>
+
+      {children}
+    </section>
+  );
+}
+
+function ToggleCard({
+  title,
+  helper,
+  checked,
+  onChange,
+}: {
+  title: string;
+  helper: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-[22px] border border-[#dce4ef] bg-[#f7f9fc] p-5">
+      <div>
+        <p className="font-black">{title}</p>
+        <p className="mt-1 text-sm leading-6 text-[#718099]">{helper}</p>
+      </div>
+
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="h-5 w-5 shrink-0 accent-[#ff6500]"
+      />
+    </label>
+  );
+}
+
+function MetaPill({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-full border border-[#dce4ef] bg-[#f8fafc] px-3 py-1.5 text-xs font-bold text-[#60718e]">
+      {children}
+    </span>
   );
 }
 
@@ -1531,28 +1629,16 @@ function Field({
 }) {
   return (
     <div>
-      <label className="text-sm text-white/45">
-        {label}
-      </label>
+      <label className="text-sm font-black text-[#53627a]">{label}</label>
 
       <input
         type={type}
         value={value}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
+        onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        min={
-          type === "number"
-            ? "0"
-            : undefined
-        }
-        step={
-          type === "number"
-            ? "0.01"
-            : undefined
-        }
-        className="mt-2 w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white outline-none transition placeholder:text-white/20 focus:border-emerald-400/40"
+        min={type === "number" ? "0" : undefined}
+        step={type === "number" ? "0.01" : undefined}
+        className="mt-2 w-full rounded-2xl border border-[#dce4ef] bg-[#f7f9fc] px-4 py-3.5 text-[#081529] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#ff9b5c] focus:bg-white focus:ring-4 focus:ring-orange-100"
       />
     </div>
   );
@@ -1576,12 +1662,10 @@ function ImageUploadField({
   onClear: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black p-4">
-      <label className="text-sm text-white/45">
-        {label}
-      </label>
+    <div className="rounded-[22px] border border-[#dce4ef] bg-[#f7f9fc] p-4">
+      <label className="text-sm font-black text-[#53627a]">{label}</label>
 
-      <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
+      <div className="mt-3 overflow-hidden rounded-2xl border border-[#e2e9f1] bg-white">
         {value.trim() ? (
           <img
             src={value.trim()}
@@ -1589,24 +1673,37 @@ function ImageUploadField({
             className="aspect-[4/3] w-full object-cover"
           />
         ) : (
-          <div className="flex aspect-[4/3] items-center justify-center text-sm text-white/20">
-            No image selected
+          <div className="flex aspect-[4/3] items-center justify-center">
+            <div className="text-center">
+              <div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-orange-50 text-[#ff6500]">
+                ✦
+              </div>
+              <p className="mt-2 text-xs font-bold text-[#9aa8bb]">
+                No image selected
+              </p>
+            </div>
           </div>
         )}
       </div>
 
       <div className="mt-3 flex gap-2">
-        <label className="flex flex-1 cursor-pointer items-center justify-center rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-black transition hover:bg-emerald-300">
+        <label
+          className={`flex flex-1 cursor-pointer items-center justify-center rounded-xl bg-[#081529] px-4 py-3 text-sm font-black text-white transition hover:bg-[#ff6500] ${
+            uploading || deleting
+              ? "pointer-events-none opacity-50"
+              : ""
+          }`}
+        >
           {uploading
             ? "Uploading..."
             : deleting
-            ? "Please wait..."
-            : "Choose & Upload"}
+              ? "Please wait..."
+              : "Choose & Upload"}
 
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif"
-            disabled={uploading}
+            disabled={uploading || deleting}
             className="hidden"
             onChange={(event) => {
               const file = event.target.files?.[0];
@@ -1625,7 +1722,7 @@ function ImageUploadField({
             type="button"
             onClick={onClear}
             disabled={uploading || deleting}
-            className="rounded-xl border border-red-400/20 bg-red-400/5 px-4 py-3 text-sm text-red-300 transition hover:bg-red-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {deleting ? "Deleting..." : "Clear"}
           </button>
@@ -1635,13 +1732,10 @@ function ImageUploadField({
       <input
         type="url"
         value={value}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
+        onChange={(event) => onChange(event.target.value)}
         placeholder="Or paste image URL..."
-        className="mt-3 w-full rounded-xl border border-white/10 bg-black px-3 py-3 text-xs text-white outline-none transition placeholder:text-white/20 focus:border-emerald-400/40"
+        className="mt-3 w-full rounded-xl border border-[#dce4ef] bg-white px-3 py-3 text-xs font-semibold text-[#53627a] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#ff9b5c] focus:ring-4 focus:ring-orange-100"
       />
     </div>
   );
 }
-

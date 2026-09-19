@@ -149,7 +149,7 @@ async function getAdminAuth(
 
   if (
     !profile ||
-    profile.role !== "ADMIN" ||
+    String(profile.role || "").toUpperCase() !== "ADMIN" ||
     profile.is_active === false
   ) {
     return {
@@ -157,6 +157,49 @@ async function getAdminAuth(
       response: NextResponse.json(
         {
           error: "Admin access required.",
+        },
+        {
+          status: 403,
+        }
+      ),
+    };
+  }
+
+  /*
+    Single-owner protection.
+
+    OWNER_ADMIN_USER_ID must match the one Supabase Auth user
+    who owns and operates ZonixAssets. Even if another profile
+    is accidentally assigned ADMIN, this route will deny it.
+  */
+
+  const ownerAdminUserId =
+    process.env.OWNER_ADMIN_USER_ID?.trim();
+
+  if (!ownerAdminUserId) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          code: "OWNER_ADMIN_NOT_CONFIGURED",
+          error:
+            "OWNER_ADMIN_USER_ID is not configured.",
+        },
+        {
+          status: 500,
+        }
+      ),
+    };
+  }
+
+  if (user.id !== ownerAdminUserId) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          code: "SINGLE_OWNER_ADMIN_ONLY",
+          error:
+            "This store is restricted to one owner administrator.",
         },
         {
           status: 403,
