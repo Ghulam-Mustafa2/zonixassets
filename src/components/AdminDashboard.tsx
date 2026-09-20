@@ -245,6 +245,7 @@ export default function AdminDashboard() {
             <AdminNav href="/admin/products">Products</AdminNav>
             <AdminNav href="/admin/orders">Orders</AdminNav>
             <AdminNav href="/admin/customers">Customers</AdminNav>
+            <AdminNav href="/admin/support">Support Chats</AdminNav>
             <AdminNav href="/admin/analytics">Analytics</AdminNav>
           </nav>
 
@@ -371,8 +372,9 @@ export default function AdminDashboard() {
             <ActionCard href="/admin/products" eyebrow="Products" title="Manage Products" description="Add, edit and manage digital products, images and downloadable files." icon="03" highlighted />
             <ActionCard href="/admin/orders" eyebrow="Orders" title="Manage Orders" description="Review purchases, payment states and order details." icon="04" />
             <ActionCard href="/admin/customers" eyebrow="Customers" title="Customer Accounts" description="Review account status, roles, purchases and access." icon="05" />
-            <ActionCard href="/admin/audit-logs" eyebrow="Security" title="Audit Logs" description="Review account suspensions, activations and role changes." icon="06" />
-            <ActionCard href="/admin/analytics" eyebrow="Reports" title="Analytics" description="Track revenue, top products, account health and activity." icon="07" />
+            <ActionCard href="/admin/support" eyebrow="Support" title="Support Chats" description="Read customer conversations, reply to messages and close resolved chats." icon="06" highlighted />
+            <ActionCard href="/admin/audit-logs" eyebrow="Security" title="Audit Logs" description="Review account suspensions, activations and role changes." icon="07" />
+            <ActionCard href="/admin/analytics" eyebrow="Reports" title="Analytics" description="Track revenue, top products, account health and activity." icon="08" />
           </div>
         </section>
 

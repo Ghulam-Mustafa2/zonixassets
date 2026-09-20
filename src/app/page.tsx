@@ -286,7 +286,7 @@ export default function Home() {
               <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,14,28,0.96)_0%,rgba(8,14,28,0.88)_40%,rgba(8,14,28,0.50)_70%,rgba(8,14,28,0.22)_100%)]" />
             </div>
 
-            <div className="relative z-10 grid min-h-[410px] items-end lg:min-h-[500px] lg:grid-cols-[1.08fr_.92fr]">
+            <div className="relative z-10 grid min-h-[410px] items-end lg:min-h-[470px] lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,.92fr)]">
               <div className="px-5 pb-8 pt-8 sm:px-8 sm:pb-10 sm:pt-10 lg:px-10 lg:pb-12 lg:pt-12">
                 <p className="inline-flex rounded-full border border-orange-300/20 bg-orange-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-orange-300 sm:text-xs">
                   {site.tagline?.trim() || "Premium Digital Asset Store"}
@@ -318,15 +318,10 @@ export default function Home() {
                   </Link>
                 </div>
 
-                <div className="mt-7 grid max-w-xl grid-cols-1 gap-3 min-[430px]:grid-cols-3">
-                  <HeroInfoCard label="Instant Access" text="Fast digital delivery" />
-                  <HeroInfoCard label="Secure Checkout" text="Protected payments" />
-                  <HeroInfoCard label="Curated Assets" text="Professional quality" />
-                </div>
               </div>
 
-              <div className="hidden h-full items-end justify-end lg:flex">
-                <div className="mb-8 mr-8 w-full max-w-[380px] rounded-[24px] border border-white/15 bg-white/10 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+              <div className="hidden h-full min-w-0 items-end justify-end p-8 pl-4 lg:flex">
+                <div className="w-full max-w-[420px] rounded-[24px] border border-white/15 bg-white/10 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-2xl bg-white/95 p-3.5 text-slate-950">
                       <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#ff6b00]">
@@ -426,7 +421,7 @@ export default function Home() {
 
       {/* Featured products */}
       {homepage.featured_products_enabled !== false && (
-        <section className="px-3 py-5 sm:px-6 sm:py-7">
+        <section className="px-3 py-4 sm:px-6 sm:py-5">
           <div className="mx-auto max-w-7xl">
             <SectionHeading
               eyebrow={
@@ -688,10 +683,6 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3 py-2.5 text-[10px] font-bold text-emerald-800 sm:text-xs">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-black shadow-sm">✓</span>
-              Protected checkout
-            </div>
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-2.5 sm:mt-6 sm:grid-cols-4 sm:gap-3">
@@ -812,25 +803,6 @@ export default function Home() {
   );
 }
 
-function HeroInfoCard({
-  label,
-  text,
-}: {
-  label: string;
-  text: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-300 sm:text-[11px]">
-        {label}
-      </p>
-      <p className="mt-1 text-[11px] leading-5 text-white/75 sm:text-xs">
-        {text}
-      </p>
-    </div>
-  );
-}
-
 function SectionHeading({
   eyebrow,
   title,
@@ -866,8 +838,19 @@ function SectionHeading({
 function MovingProductRail({ products }: { products: Product[] }) {
   const visibleProducts = products.slice(0, 5);
 
+  if (visibleProducts.length === 1) {
+    return <SingleFeaturedProduct product={visibleProducts[0]} />;
+  }
+
+  const gridLayout =
+    visibleProducts.length === 2
+      ? "mx-auto max-w-2xl grid-cols-2"
+      : visibleProducts.length === 3
+      ? "grid-cols-2 md:grid-cols-3"
+      : "grid-cols-2 lg:grid-cols-4 xl:grid-cols-5";
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+    <div className={`grid gap-3 sm:gap-4 ${gridLayout}`}>
       {visibleProducts.map((product, index) => (
         <ProductCard
           key={`${product.id || product.slug}-${index}`}
@@ -885,6 +868,72 @@ function MovingProductRail({ products }: { products: Product[] }) {
         />
       ))}
     </div>
+  );
+}
+
+function SingleFeaturedProduct({ product }: { product: Product }) {
+  const image = productImage(product, 0);
+  const productHref = `/products/${product.slug}`;
+
+  return (
+    <article className="mx-auto grid max-w-4xl overflow-hidden rounded-[24px] border border-slate-200/90 bg-white shadow-[0_14px_36px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_22px_50px_rgba(15,23,42,0.12)] md:grid-cols-[1.05fr_.95fr]">
+      <Link href={productHref} className="block bg-[#f7f8fb]">
+        <div className="relative h-full min-h-[230px] overflow-hidden border-b border-slate-100 md:min-h-[300px] md:border-b-0 md:border-r">
+          <img
+            src={image}
+            alt={product.title}
+            className="h-full w-full object-contain p-4 transition duration-500 hover:scale-[1.02] sm:p-5"
+          />
+          <span className="absolute left-3 top-3 rounded-full bg-[#0b1025] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-white shadow-sm sm:left-4 sm:top-4">
+            Best Seller
+          </span>
+        </div>
+      </Link>
+
+      <div className="flex min-w-0 flex-col justify-center p-4 sm:p-6 md:p-7">
+        <p className="truncate text-[9px] font-black uppercase tracking-[0.18em] text-[#ff6b00] sm:text-[10px]">
+          {product.category || "Digital Product"}
+        </p>
+
+        <Link href={productHref} className="mt-2 block">
+          <h3 className="text-xl font-black leading-tight tracking-[-0.02em] text-slate-950 transition hover:text-[#ff6b00] sm:text-2xl">
+            {product.title}
+          </h3>
+        </Link>
+
+        {product.description && (
+          <p
+            className="mt-3 overflow-hidden text-sm leading-6 text-slate-500"
+            style={{
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+            }}
+          >
+            {product.description}
+          </p>
+        )}
+
+        <div className="mt-5 flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-2xl font-black tracking-[-0.03em] text-slate-950">
+              {money(product.price)}
+            </p>
+            <p className="mt-1 flex items-center gap-1.5 whitespace-nowrap text-[10px] font-semibold text-slate-400">
+              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+              Instant access
+            </p>
+          </div>
+
+          <Link
+            href={productHref}
+            className="inline-flex items-center justify-center rounded-xl bg-[#0b1025] px-5 py-3 text-xs font-black !text-white shadow-[0_8px_18px_rgba(11,16,37,0.14)] transition hover:-translate-y-0.5 hover:bg-[#ff6b00]"
+          >
+            View Product
+          </Link>
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -932,11 +981,20 @@ function ProductCard({
         </Link>
 
         {product.description ? (
-          <p className="mt-2 hidden line-clamp-2 min-h-[40px] text-xs leading-5 text-slate-500 sm:block">
-            {product.description}
-          </p>
+          <div className="mt-2 hidden h-[40px] overflow-hidden sm:block">
+            <p
+              className="overflow-hidden text-xs leading-5 text-slate-500"
+              style={{
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+              }}
+            >
+              {product.description}
+            </p>
+          </div>
         ) : (
-          <div className="hidden min-h-[40px] sm:block" />
+          <div className="hidden h-[40px] sm:block" />
         )}
 
         <div className="mt-auto pt-3 sm:pt-4">
@@ -945,7 +1003,7 @@ function ProductCard({
               <p className="text-base font-black tracking-[-0.02em] text-slate-950 sm:text-lg">
                 {money(product.price)}
               </p>
-              <p className="mt-0.5 flex items-center gap-1 text-[8px] font-semibold text-slate-400 sm:mt-1 sm:gap-1.5 sm:text-[10px]">
+              <p className="mt-0.5 flex items-center gap-1 whitespace-nowrap text-[8px] font-semibold text-slate-400 sm:mt-1 sm:gap-1.5 sm:text-[10px]">
                 <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 sm:h-2 sm:w-2" />
                 Instant access
               </p>

@@ -1,6 +1,26 @@
+"use client";
+
 import Link from "next/link";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+
+type ChatMessage = {
+  id: string;
+  senderType: "customer" | "admin";
+  message: string;
+  createdAt: string;
+};
+
+type ChatResponse = {
+  success?: boolean;
+  conversation?: {
+    id: string;
+    status: "open" | "closed";
+  } | null;
+  messages?: ChatMessage[];
+  error?: string;
+};
 
 const supportRoutes = [
   {
@@ -44,7 +64,145 @@ const faqs = [
   },
 ];
 
+function formatMessageTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function SupportPage() {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [chatStatus, setChatStatus] = useState<"open" | "closed" | null>(null);
+  const [message, setMessage] = useState("");
+  const [loadingChat, setLoadingChat] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [chatError, setChatError] = useState("");
+  const [needsLogin, setNeedsLogin] = useState(false);
+
+  const chatSectionRef = useRef<HTMLDivElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  async function loadChat(silent = false) {
+    try {
+      if (!silent) {
+        setLoadingChat(true);
+      }
+
+      const response = await fetch("/api/support/chat", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      const data = (await response.json().catch(() => null)) as ChatResponse | null;
+
+      if (response.status === 401) {
+        setNeedsLogin(true);
+        setMessages([]);
+        setChatStatus(null);
+        setChatError("");
+        return;
+      }
+
+      if (!response.ok) {
+        if (!silent) {
+          setChatError(data?.error || "Unable to load support chat.");
+        }
+        return;
+      }
+
+      setNeedsLogin(false);
+      setChatError("");
+      setChatStatus(data?.conversation?.status || null);
+      setMessages(Array.isArray(data?.messages) ? data!.messages! : []);
+    } catch {
+      if (!silent) {
+        setChatError("Unable to load support chat.");
+      }
+    } finally {
+      if (!silent) {
+        setLoadingChat(false);
+      }
+    }
+  }
+
+  useEffect(() => {
+    loadChat();
+
+    const interval = window.setInterval(() => {
+      loadChat(true);
+    }, 3500);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }, [messages.length]);
+
+  function focusChat() {
+    chatSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }
+
+  async function sendMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const cleanMessage = message.trim();
+
+    if (!cleanMessage || sending || needsLogin) {
+      return;
+    }
+
+    setSending(true);
+    setChatError("");
+
+    try {
+      const response = await fetch("/api/support/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: cleanMessage,
+        }),
+      });
+
+      const data = (await response.json().catch(() => null)) as ChatResponse | null;
+
+      if (response.status === 401) {
+        setNeedsLogin(true);
+        setChatError("Please sign in to start a support conversation.");
+        return;
+      }
+
+      if (!response.ok) {
+        setChatError(data?.error || "Unable to send your message.");
+        return;
+      }
+
+      setMessage("");
+      setNeedsLogin(false);
+      setChatStatus(data?.conversation?.status || "open");
+      setMessages(Array.isArray(data?.messages) ? data!.messages! : []);
+    } catch {
+      setChatError("Unable to send your message.");
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#f4f6fb] text-[#0b1220]">
       <Navbar />
@@ -57,7 +215,6 @@ export default function SupportPage() {
         </div>
 
         <div className="relative mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:px-6 sm:py-14 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:px-8 lg:py-16">
-          {/* LEFT */}
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-[10px] font-black uppercase tracking-[0.17em] text-orange-300">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -94,12 +251,13 @@ export default function SupportPage() {
             </div>
 
             <div className="mt-6 grid max-w-[390px] grid-cols-2 gap-3">
-              <Link
-                href="/contact"
-                className="flex min-h-12 items-center justify-center rounded-xl bg-[#ff6b13] px-4 py-3 text-center text-sm font-black !text-white transition hover:bg-[#f45f06]"
+              <button
+                type="button"
+                onClick={focusChat}
+                className="flex min-h-12 items-center justify-center rounded-xl bg-[#ff6b13] px-4 py-3 text-center text-sm font-black text-white transition hover:bg-[#f45f06]"
               >
-                Contact Support
-              </Link>
+                Start Live Chat
+              </button>
 
               <Link
                 href="/account/orders"
@@ -110,8 +268,11 @@ export default function SupportPage() {
             </div>
           </div>
 
-          {/* CHAT PREVIEW */}
-          <div className="relative mx-auto w-full min-w-0 max-w-[620px]">
+          {/* LIVE CHAT */}
+          <div
+            ref={chatSectionRef}
+            className="relative mx-auto w-full min-w-0 max-w-[620px]"
+          >
             <div className="absolute -inset-4 rounded-[34px] bg-gradient-to-br from-orange-500/20 via-transparent to-cyan-400/15 blur-2xl" />
 
             <div className="relative overflow-hidden rounded-[26px] border border-white/10 bg-white shadow-[0_28px_70px_rgba(0,0,0,0.32)] sm:rounded-[30px]">
@@ -120,6 +281,7 @@ export default function SupportPage() {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#111827] font-black text-white">
                     Z
                   </div>
+
                   <div className="min-w-0">
                     <p className="truncate text-sm font-black">Zonix Support</p>
                     <p className="flex items-center gap-1.5 text-[10px] text-slate-500 sm:text-xs">
@@ -130,29 +292,81 @@ export default function SupportPage() {
                 </div>
 
                 <span className="shrink-0 rounded-full bg-orange-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-orange-600 sm:text-[10px]">
-                  Live help
+                  {chatStatus === "closed" ? "Closed" : "Live help"}
                 </span>
               </div>
 
-              <div className="space-y-3 bg-[#f7f8fc] p-4 sm:space-y-4 sm:p-6">
-                <div className="max-w-[80%] rounded-2xl rounded-tl-md bg-white px-4 py-3 shadow-sm">
+              <div className="max-h-[410px] min-h-[300px] space-y-3 overflow-y-auto bg-[#f7f8fc] p-4 sm:space-y-4 sm:p-6">
+                <div className="max-w-[86%] rounded-2xl rounded-tl-md bg-white px-4 py-3 shadow-sm">
                   <p className="text-xs leading-5 text-slate-700 sm:text-sm sm:leading-6">
                     Hi 👋 How can we help today?
                   </p>
                 </div>
 
-                <div className="ml-auto max-w-[82%] rounded-2xl rounded-tr-md bg-[#0b1220] px-4 py-3 text-white">
-                  <p className="text-xs leading-5 sm:text-sm sm:leading-6">
-                    I purchased a UI kit and need help finding my download.
-                  </p>
-                </div>
+                {loadingChat ? (
+                  <div className="max-w-[86%] rounded-2xl bg-white px-4 py-3 text-xs text-slate-400 shadow-sm">
+                    Loading your conversation...
+                  </div>
+                ) : null}
 
-                <div className="max-w-[86%] rounded-2xl rounded-tl-md bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs leading-5 text-slate-700 sm:text-sm sm:leading-6">
-                    Sure — open your orders area and select the paid order. If
-                    the file still isn’t available, send us the order reference.
-                  </p>
-                </div>
+                {!loadingChat && needsLogin ? (
+                  <div className="max-w-[90%] rounded-2xl rounded-tl-md bg-white px-4 py-4 shadow-sm">
+                    <p className="text-xs leading-5 text-slate-700 sm:text-sm">
+                      Sign in to start a private support conversation and keep your
+                      message history linked to your account.
+                    </p>
+                    <Link
+                      href="/login"
+                      className="mt-3 inline-flex rounded-lg bg-[#0b1220] px-4 py-2 text-xs font-black !text-white"
+                    >
+                      Sign In
+                    </Link>
+                  </div>
+                ) : null}
+
+                {!needsLogin &&
+                  messages.map((item) => {
+                    const isCustomer = item.senderType === "customer";
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={
+                          isCustomer
+                            ? "ml-auto max-w-[84%] rounded-2xl rounded-tr-md bg-[#0b1220] px-4 py-3 text-white"
+                            : "max-w-[86%] rounded-2xl rounded-tl-md bg-white px-4 py-3 shadow-sm"
+                        }
+                      >
+                        <p
+                          className={
+                            isCustomer
+                              ? "whitespace-pre-wrap break-words text-xs leading-5 sm:text-sm sm:leading-6"
+                              : "whitespace-pre-wrap break-words text-xs leading-5 text-slate-700 sm:text-sm sm:leading-6"
+                          }
+                        >
+                          {item.message}
+                        </p>
+                        <p
+                          className={
+                            isCustomer
+                              ? "mt-1 text-right text-[9px] text-white/45"
+                              : "mt-1 text-[9px] text-slate-400"
+                          }
+                        >
+                          {formatMessageTime(item.createdAt)}
+                        </p>
+                      </div>
+                    );
+                  })}
+
+                {!needsLogin && messages.length === 0 && !loadingChat ? (
+                  <div className="max-w-[86%] rounded-2xl rounded-tl-md bg-white px-4 py-3 shadow-sm">
+                    <p className="text-xs leading-5 text-slate-700 sm:text-sm sm:leading-6">
+                      Send your first message below. Include an order number when
+                      your question is about a purchase.
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className="grid gap-2 pt-1 sm:grid-cols-3">
                   <Link
@@ -176,21 +390,56 @@ export default function SupportPage() {
                     Refund Policy
                   </Link>
                 </div>
+
+                <div ref={messagesEndRef} />
               </div>
 
-              <div className="flex items-center gap-3 border-t border-slate-200 bg-white p-3 sm:p-4">
-                <div className="min-w-0 flex-1 truncate rounded-xl bg-slate-100 px-4 py-3 text-xs text-slate-400 sm:text-sm">
-                  Type your message...
+              <form
+                onSubmit={sendMessage}
+                className="border-t border-slate-200 bg-white p-3 sm:p-4"
+              >
+                <div className="flex items-end gap-3">
+                  <textarea
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value)}
+                    placeholder={
+                      needsLogin
+                        ? "Sign in to send a message"
+                        : chatStatus === "closed"
+                        ? "This conversation is closed"
+                        : "Type your message..."
+                    }
+                    maxLength={4000}
+                    rows={1}
+                    disabled={needsLogin || chatStatus === "closed" || sending}
+                    className="min-h-11 max-h-32 min-w-0 flex-1 resize-y rounded-xl border border-transparent bg-slate-100 px-4 py-3 text-xs text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-200 focus:bg-white sm:text-sm"
+                  />
+
+                  <button
+                    type="submit"
+                    aria-label="Send support message"
+                    disabled={
+                      needsLogin ||
+                      chatStatus === "closed" ||
+                      sending ||
+                      message.trim().length === 0
+                    }
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#ff6b13] text-lg font-black text-white transition hover:bg-[#f45f06] disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    {sending ? "…" : "→"}
+                  </button>
                 </div>
 
-                <Link
-                  href="/contact"
-                  aria-label="Contact support"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#ff6b13] text-lg font-black !text-white transition hover:bg-[#f45f06]"
-                >
-                  →
-                </Link>
-              </div>
+                {chatError ? (
+                  <p className="mt-2 text-xs font-semibold text-rose-600">
+                    {chatError}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-[10px] text-slate-400">
+                    Messages are saved securely to your account.
+                  </p>
+                )}
+              </form>
             </div>
           </div>
         </div>
@@ -221,7 +470,9 @@ export default function SupportPage() {
               href={item.href}
               className="group flex min-h-[210px] flex-col rounded-[24px] border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:p-6"
             >
-              <div className={`flex h-11 w-11 items-center justify-center rounded-xl text-lg font-black ${item.badge}`}>
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-xl text-lg font-black ${item.badge}`}
+              >
                 {item.number}
               </div>
 
@@ -297,12 +548,13 @@ export default function SupportPage() {
             </p>
           </div>
 
-          <Link
-            href="/contact"
-            className="flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-[#ff6b13] px-6 py-3 text-center text-sm font-black !text-white transition hover:bg-[#f45f06]"
+          <button
+            type="button"
+            onClick={focusChat}
+            className="flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-[#ff6b13] px-6 py-3 text-center text-sm font-black text-white transition hover:bg-[#f45f06]"
           >
             Start Support Request
-          </Link>
+          </button>
         </div>
       </section>
 

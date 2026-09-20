@@ -18,6 +18,71 @@ type ProfileRow = {
   is_active?: boolean | null;
 };
 
+type OfferRow = {
+  id: string;
+  coupon_code?: string | null;
+  discount_text?: string | null;
+  is_active?: boolean | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
+};
+
+type ParsedDiscount =
+  | { kind: "percent"; value: number }
+  | { kind: "fixed"; value: number };
+
+function parseDiscountText(value: unknown): ParsedDiscount | null {
+  if (typeof value !== "string") return null;
+
+  const text = value.trim();
+  if (!text) return null;
+
+  const percentMatch = text.match(/(\d+(?:\.\d+)?)\s*%/);
+
+  if (percentMatch) {
+    const percent = Number(percentMatch[1]);
+
+    if (Number.isFinite(percent) && percent > 0 && percent <= 100) {
+      return {
+        kind: "percent",
+        value: percent,
+      };
+    }
+  }
+
+  const fixedMatch = text.match(
+    /(?:\$|USD\s*)?(\d+(?:\.\d+)?)\s*(?:USD|DOLLARS?)?(?:\s*OFF)?/i
+  );
+
+  if (fixedMatch) {
+    const amount = Number(fixedMatch[1]);
+
+    if (Number.isFinite(amount) && amount > 0) {
+      return {
+        kind: "fixed",
+        value: amount,
+      };
+    }
+  }
+
+  return null;
+}
+
+function calculateDiscount(
+  subtotal: number,
+  discount: ParsedDiscount
+) {
+  const raw =
+    discount.kind === "percent"
+      ? subtotal * (discount.value / 100)
+      : discount.value;
+
+  return Math.min(
+    subtotal,
+    Math.max(0, Math.round(raw * 100) / 100)
+  );
+}
+
 function createOrderNumber() {
   const timestamp = Date.now().toString().slice(-8);
 
@@ -199,6 +264,11 @@ export async function POST(request: Request) {
       | IncomingCartItem[]
       | undefined;
 
+    const requestedCouponCode =
+      typeof body?.couponCode === "string"
+        ? body.couponCode.trim().toUpperCase()
+        : "";
+
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
         {
@@ -364,20 +434,135 @@ export async function POST(request: Request) {
 
     const serviceFee = 0;
 
-    const total = subtotal + serviceFee;
-
-    /*
-      Numeric values ko 2 decimals tak normalize
-    */
-
     const finalSubtotal =
       Math.round(subtotal * 100) / 100;
 
     const finalServiceFee =
       Math.round(serviceFee * 100) / 100;
 
+    /*
+      Coupon is always validated server-side.
+      Browser-provided discount amounts are never trusted.
+    */
+
+    let appliedCoupon:
+      | {
+          code: string;
+          discountText: string;
+          kind: "percent" | "fixed";
+          value: number;
+          discountAmount: number;
+        }
+      | null = null;
+
+    if (requestedCouponCode) {
+      const offerResponse = await fetch(
+        `${supabaseUrl}/rest/v1/offers?coupon_code=eq.${encodeURIComponent(
+          requestedCouponCode
+        )}&is_active=eq.true&select=id,coupon_code,discount_text,is_active,starts_at,ends_at&limit=1`,
+        {
+          method: "GET",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${accessToken}`,
+          },
+          cache: "no-store",
+        }
+      );
+
+      const offerData = await offerResponse.json();
+
+      if (!offerResponse.ok) {
+        console.error("ORDER_COUPON_FETCH_ERROR:", offerData);
+
+        return NextResponse.json(
+          {
+            error: "Unable to validate your coupon right now.",
+          },
+          { status: 500 }
+        );
+      }
+
+      const offer =
+        Array.isArray(offerData) && offerData.length > 0
+          ? (offerData[0] as OfferRow)
+          : null;
+
+      if (!offer) {
+        return NextResponse.json(
+          {
+            error: "This coupon code is invalid or inactive.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const now = new Date();
+      const startsAt = offer.starts_at
+        ? new Date(offer.starts_at)
+        : null;
+      const endsAt = offer.ends_at
+        ? new Date(offer.ends_at)
+        : null;
+
+      if (
+        (startsAt && Number.isFinite(startsAt.getTime()) && startsAt > now) ||
+        (endsAt && Number.isFinite(endsAt.getTime()) && endsAt < now)
+      ) {
+        return NextResponse.json(
+          {
+            error: "This coupon is not currently active.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const parsedDiscount = parseDiscountText(
+        offer.discount_text
+      );
+
+      if (!parsedDiscount) {
+        console.error(
+          "ORDER_COUPON_INVALID_DISCOUNT:",
+          offer.discount_text
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "This coupon is configured incorrectly. Please contact support.",
+          },
+          { status: 500 }
+        );
+      }
+
+      const discountAmount = calculateDiscount(
+        finalSubtotal,
+        parsedDiscount
+      );
+
+      appliedCoupon = {
+        code:
+          offer.coupon_code?.trim().toUpperCase() ||
+          requestedCouponCode,
+        discountText:
+          offer.discount_text?.trim() ||
+          (parsedDiscount.kind === "percent"
+            ? `${parsedDiscount.value}% OFF`
+            : `$${parsedDiscount.value.toFixed(2)} OFF`),
+        kind: parsedDiscount.kind,
+        value: parsedDiscount.value,
+        discountAmount,
+      };
+    }
+
+    const total =
+      finalSubtotal +
+      finalServiceFee -
+      (appliedCoupon?.discountAmount || 0);
+
     const finalTotal =
-      Math.round(total * 100) / 100;
+      Math.max(0, Math.round(total * 100) / 100);
 
     /*
       -----------------------------------
@@ -423,9 +608,20 @@ export async function POST(request: Request) {
 
           total: finalTotal,
 
-          /*
-            Abhi real payment gateway nahi hai.
-          */
+          // Persist coupon/discount metadata for audit, support,
+          // refunds, and payment reconciliation. These values
+          // are all calculated from the server-validated offer.
+          coupon_code:
+            appliedCoupon?.code ?? null,
+
+          discount_amount:
+            appliedCoupon?.discountAmount ?? 0,
+
+          discount_type:
+            appliedCoupon?.kind ?? null,
+
+          discount_value:
+            appliedCoupon?.value ?? null,
 
           payment_provider: null,
 
@@ -629,6 +825,30 @@ export async function POST(request: Request) {
 
           createdAt:
             createdOrder.created_at,
+
+          discount: Number(
+            createdOrder.discount_amount ??
+              appliedCoupon?.discountAmount ??
+              0
+          ),
+
+          coupon:
+            appliedCoupon
+              ? {
+                  code:
+                    createdOrder.coupon_code ??
+                    appliedCoupon.code,
+                  discountText:
+                    appliedCoupon.discountText,
+                  kind:
+                    createdOrder.discount_type ??
+                    appliedCoupon.kind,
+                  value: Number(
+                    createdOrder.discount_value ??
+                      appliedCoupon.value
+                  ),
+                }
+              : null,
         },
       },
       { status: 201 }

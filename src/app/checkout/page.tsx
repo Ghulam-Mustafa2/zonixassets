@@ -32,8 +32,92 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discountText: string;
+    kind: "percent" | "fixed";
+    value: number;
+  } | null>(null);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [couponError, setCouponError] = useState("");
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
   const serviceFee = 0;
-  const grandTotal = cartTotal + serviceFee;
+
+  const previewDiscount = appliedCoupon
+    ? appliedCoupon.kind === "percent"
+      ? Math.min(
+          cartTotal,
+          Math.round(cartTotal * appliedCoupon.value) / 100
+        )
+      : Math.min(cartTotal, appliedCoupon.value)
+    : 0;
+
+  const grandTotal = Math.max(
+    0,
+    Math.round((cartTotal + serviceFee - previewDiscount) * 100) / 100
+  );
+
+  async function handleApplyCoupon() {
+    setCouponError("");
+    setCouponMessage("");
+
+    const normalizedCode = couponCode.trim().toUpperCase();
+
+    if (!normalizedCode) {
+      setCouponError("Enter a coupon code first.");
+      setAppliedCoupon(null);
+      return;
+    }
+
+    try {
+      setIsApplyingCoupon(true);
+
+      const response = await fetch("/api/offers/validate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          couponCode: normalizedCode,
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setAppliedCoupon(null);
+        setCouponError(data?.error || "This coupon code is not valid.");
+        return;
+      }
+
+      setAppliedCoupon({
+        code: data.coupon.code,
+        discountText: data.coupon.discountText,
+        kind: data.coupon.kind,
+        value: Number(data.coupon.value),
+      });
+
+      setCouponCode(data.coupon.code);
+      setCouponMessage(
+        `${data.coupon.code} applied — ${data.coupon.discountText}`
+      );
+    } catch {
+      setAppliedCoupon(null);
+      setCouponError("Unable to validate this coupon right now.");
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  }
+
+  function handleRemoveCoupon() {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponMessage("");
+    setCouponError("");
+  }
 
   async function handleCheckout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -81,6 +165,7 @@ export default function CheckoutPage() {
             postalCode: postalCode.trim(),
           },
           paymentMethod: "lemon_squeezy",
+          couponCode: appliedCoupon?.code || couponCode.trim().toUpperCase() || null,
         }),
       });
 
@@ -525,12 +610,84 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
+              <div className="mt-6 border-t border-slate-200 pt-6">
+                <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.14em] text-[#ff6b00]">
+                        Coupon code
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        Enter an active ZonixAssets offer code.
+                      </p>
+                    </div>
+
+                    {appliedCoupon && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="text-xs font-black text-slate-500 transition hover:text-red-600"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(event) => {
+                        setCouponCode(event.target.value.toUpperCase());
+                        if (appliedCoupon) {
+                          setAppliedCoupon(null);
+                          setCouponMessage("");
+                        }
+                        setCouponError("");
+                      }}
+                      placeholder="e.g. LAUNCH30"
+                      autoComplete="off"
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#0b1025] outline-none transition placeholder:font-medium placeholder:tracking-normal placeholder:text-slate-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      disabled={isApplyingCoupon || !couponCode.trim()}
+                      className="shrink-0 rounded-xl bg-[#0b1537] px-4 py-3 text-xs font-black text-white transition hover:bg-[#111d43] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isApplyingCoupon ? "Checking..." : "Apply"}
+                    </button>
+                  </div>
+
+                  {couponMessage && (
+                    <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-700">
+                      ✓ {couponMessage}
+                    </div>
+                  )}
+
+                  {couponError && (
+                    <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-bold text-red-700">
+                      {couponError}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="mt-6 space-y-3 border-t border-slate-200 pt-6 text-sm">
                 <SummaryRow label="Items" value={String(cartCount)} />
                 <SummaryRow
                   label="Subtotal"
                   value={`$${cartTotal.toFixed(2)}`}
                 />
+
+                {appliedCoupon && previewDiscount > 0 && (
+                  <SummaryRow
+                    label={`Coupon ${appliedCoupon.code}`}
+                    value={`-$${previewDiscount.toFixed(2)}`}
+                    positive
+                  />
+                )}
                 <SummaryRow
                   label="Shipping"
                   value="Not required"
