@@ -14,6 +14,7 @@ type ProductRow = {
   slug: string;
   description: string | null;
   category: string;
+  product_type: string | null;
   price: number | string;
   featured: boolean;
   is_active: boolean;
@@ -29,6 +30,7 @@ type CreateProductBody = {
   slug?: string;
   description?: string;
   category?: string;
+  productType?: string;
   price?: number | string;
   featured?: boolean;
   isActive?: boolean;
@@ -268,7 +270,7 @@ export async function GET() {
 
     const response =
       await fetch(
-        `${auth.supabaseUrl}/rest/v1/products?select=id,title,slug,description,category,price,featured,is_active,file_path,image_url,image_url_2,image_url_3,created_at&order=created_at.desc`,
+        `${auth.supabaseUrl}/rest/v1/products?select=id,title,slug,description,category,product_type,price,featured,is_active,file_path,image_url,image_url_2,image_url_3,created_at&order=created_at.desc`,
         {
           method: "GET",
 
@@ -331,6 +333,10 @@ export async function GET() {
 
             category:
               product.category,
+
+            productType:
+              product.product_type ||
+              "DIGITAL_DOWNLOAD",
 
             price:
               Number(
@@ -444,6 +450,11 @@ export async function POST(
         ? body.category.trim()
         : "";
 
+    const productType =
+      typeof body.productType === "string"
+        ? body.productType.trim().toUpperCase()
+        : "DIGITAL_DOWNLOAD";
+
     const price =
       Number(body.price);
 
@@ -542,6 +553,21 @@ export async function POST(
         {
           error:
             "Product category is required.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (
+      productType !== "DIGITAL_DOWNLOAD" &&
+      productType !== "AI_RENTAL"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Unsupported product type.",
         },
         {
           status: 400,
@@ -698,6 +724,8 @@ export async function POST(
             slug,
             description,
             category,
+            product_type:
+              productType,
             price,
             featured,
             is_active:
@@ -776,6 +804,10 @@ export async function POST(
 
           category:
             product.category,
+
+          productType:
+            product.product_type ||
+            "DIGITAL_DOWNLOAD",
 
           price:
             Number(
