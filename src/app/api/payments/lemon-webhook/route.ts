@@ -56,6 +56,11 @@ type DownloadRow = {
   expires_at: string | null;
 };
 
+type ProductDeliveryRow = {
+  id: string;
+  product_type: string | null;
+};
+
 function safeSignatureCompare(
   expected: string,
   received: string
@@ -756,6 +761,214 @@ export async function POST(
           status: 500,
         }
       );
+    }
+
+    /*
+      Provision ZonixAssets-side AI rental records for AI_RENTAL
+      products. GM AI client creation remains a manual admin step
+      until we have a stable authenticated provisioning API.
+    */
+
+    const productIds =
+      Array.from(
+        new Set(
+          orderItems
+            .map(
+              (item) =>
+                item.product_id
+            )
+            .filter(
+              (
+                id
+              ): id is string =>
+                Boolean(id)
+            )
+        )
+      );
+
+    let aiRentalOrderItems:
+      OrderItemRow[] = [];
+
+    if (productIds.length > 0) {
+      const productFilter =
+        productIds
+          .map(
+            (id) =>
+              `"${id}"`
+          )
+          .join(",");
+
+      const productResponse =
+        await fetch(
+          `${supabaseUrl}/rest/v1/products?id=in.(${encodeURIComponent(
+            productFilter
+          )})&select=id,product_type`,
+          {
+            method: "GET",
+            headers:
+              serviceHeaders(
+                supabaseSecretKey
+              ),
+            cache: "no-store",
+          }
+        );
+
+      const productData =
+        await productResponse
+          .json()
+          .catch(() => null);
+
+      if (!productResponse.ok) {
+        console.error(
+          "LEMON_WEBHOOK_PRODUCT_TYPE_LOAD_ERROR",
+          productData
+        );
+      } else {
+        const productTypes =
+          new Map(
+            (
+              Array.isArray(
+                productData
+              )
+                ? (productData as ProductDeliveryRow[])
+                : []
+            ).map(
+              (product) => [
+                product.id,
+                String(
+                  product.product_type ||
+                    "DIGITAL_DOWNLOAD"
+                ).toUpperCase(),
+              ]
+            )
+          );
+
+        aiRentalOrderItems =
+          orderItems.filter(
+            (item) =>
+              item.product_id &&
+              productTypes.get(
+                item.product_id
+              ) === "AI_RENTAL"
+          );
+      }
+    }
+
+    if (
+      aiRentalOrderItems.length > 0
+    ) {
+      const rentalItemIds =
+        aiRentalOrderItems
+          .map(
+            (item) =>
+              `"${item.id}"`
+          )
+          .join(",");
+
+      const existingRentalsResponse =
+        await fetch(
+          `${supabaseUrl}/rest/v1/ai_rentals?user_id=eq.${encodeURIComponent(
+            userId
+          )}&order_item_id=in.(${encodeURIComponent(
+            rentalItemIds
+          )})&select=id,order_item_id`,
+          {
+            method: "GET",
+            headers:
+              serviceHeaders(
+                supabaseSecretKey
+              ),
+            cache: "no-store",
+          }
+        );
+
+      const existingRentalsData =
+        await existingRentalsResponse
+          .json()
+          .catch(() => null);
+
+      if (
+        existingRentalsResponse.ok
+      ) {
+        const existingRentalItems =
+          new Set(
+            (
+              Array.isArray(
+                existingRentalsData
+              )
+                ? existingRentalsData
+                : []
+            ).map(
+              (
+                rental: {
+                  order_item_id?: string;
+                }
+              ) =>
+                rental.order_item_id
+            )
+          );
+
+        const missingRentals =
+          aiRentalOrderItems.filter(
+            (item) =>
+              !existingRentalItems.has(
+                item.id
+              )
+          );
+
+        if (missingRentals.length > 0) {
+          const createRentalsResponse =
+            await fetch(
+              `${supabaseUrl}/rest/v1/ai_rentals`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type":
+                    "application/json",
+                  ...serviceHeaders(
+                    supabaseSecretKey
+                  ),
+                  Prefer:
+                    "return=minimal",
+                },
+                body: JSON.stringify(
+                  missingRentals.map(
+                    (item) => ({
+                      user_id:
+                        userId,
+                      order_item_id:
+                        item.id,
+                      product_id:
+                        item.product_id,
+                      status:
+                        "PENDING_SETUP",
+                    })
+                  )
+                ),
+                cache:
+                  "no-store",
+              }
+            );
+
+          if (
+            !createRentalsResponse.ok
+          ) {
+            console.error(
+              "LEMON_WEBHOOK_AI_RENTAL_CREATE_ERROR",
+              await createRentalsResponse
+                .text()
+                .catch(
+                  () => ""
+                )
+            );
+          }
+        }
+      } else {
+        console.error(
+          "LEMON_WEBHOOK_AI_RENTAL_LOAD_ERROR",
+          existingRentalsData
+        );
+      }
     }
 
     const orderItemIds =

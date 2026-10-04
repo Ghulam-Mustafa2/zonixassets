@@ -51,6 +51,11 @@ type DownloadRow = {
   created_at?: string;
 };
 
+type ProductTypeRow = {
+  id: string;
+  product_type: string | null;
+};
+
 function numberValue(
   value: number | string | null | undefined
 ) {
@@ -311,7 +316,83 @@ export async function GET() {
     }
 
     /*
-      7. Format orders
+      7. Load product delivery types
+    */
+
+    const productTypeMap =
+      new Map<string, string>();
+
+    const productIds =
+      Array.from(
+        new Set(
+          orderItems
+            .map(
+              (item) =>
+                item.product_id
+            )
+            .filter(
+              (
+                id
+              ): id is string =>
+                Boolean(id)
+            )
+        )
+      );
+
+    if (productIds.length > 0) {
+      const productFilter =
+        productIds
+          .map(
+            (id) =>
+              `"${id}"`
+          )
+          .join(",");
+
+      const productsResponse =
+        await fetch(
+          `${supabaseUrl}/rest/v1/products?id=in.(${encodeURIComponent(
+            productFilter
+          )})&select=id,product_type`,
+          {
+            method: "GET",
+            headers: {
+              apikey:
+                supabaseKey,
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
+            cache:
+              "no-store",
+          }
+        );
+
+      const productsData =
+        await productsResponse
+          .json();
+
+      if (productsResponse.ok) {
+        (
+          Array.isArray(
+            productsData
+          )
+            ? (productsData as ProductTypeRow[])
+            : []
+        ).forEach(
+          (product) => {
+            productTypeMap.set(
+              product.id,
+              String(
+                product.product_type ||
+                  "DIGITAL_DOWNLOAD"
+              ).toUpperCase()
+            );
+          }
+        );
+      }
+    }
+
+    /*
+      8. Format orders
     */
 
     const formattedOrders =
@@ -371,7 +452,7 @@ export async function GET() {
       });
 
     /*
-      8. Paid orders
+      9. Paid orders
     */
 
     const paidOrders =
@@ -382,7 +463,7 @@ export async function GET() {
       );
 
     /*
-      9. Statistics
+      10. Statistics
     */
 
     const totalPurchases =
@@ -396,7 +477,7 @@ export async function GET() {
       );
 
     /*
-      10. Load actual download entitlements
+      11. Load actual download entitlements
 
       This is the important change.
 
@@ -445,7 +526,7 @@ export async function GET() {
         : [];
 
     /*
-      11. Join downloads with order_items
+      12. Join downloads with order_items
 
       downloads.order_item_id
       -> order_items.id
@@ -480,7 +561,24 @@ export async function GET() {
           title:
             matchingItem.product_title,
 
-          type: "Digital Product",
+          type:
+            matchingItem.product_id &&
+            productTypeMap.get(
+              matchingItem.product_id
+            ) === "AI_RENTAL"
+              ? "AI Rental"
+              : "Digital Product",
+
+          productType:
+            matchingItem.product_id
+              ? productTypeMap.get(
+                  matchingItem.product_id
+                ) ||
+                "DIGITAL_DOWNLOAD"
+              : "DIGITAL_DOWNLOAD",
+
+          orderItemId:
+            matchingItem.id,
 
           downloadUrl: null,
 
@@ -507,7 +605,7 @@ export async function GET() {
       );
 
     /*
-      12. Count only currently usable downloads
+      13. Count only currently usable downloads
     */
 
     const now = Date.now();
@@ -532,7 +630,7 @@ export async function GET() {
       }).length;
 
     /*
-      13. Return dashboard
+      14. Return dashboard
     */
 
     return NextResponse.json(

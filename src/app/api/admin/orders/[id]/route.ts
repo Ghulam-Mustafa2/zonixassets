@@ -500,7 +500,7 @@ export async function GET(
         await fetch(
           `${auth.supabaseUrl}/rest/v1/downloads?order_item_id=in.(${encodeURIComponent(
             orderItemIds
-          )})&select=id,user_id,order_item_id,download_count,max_downloads,expires_at,created_at`,
+          )})&select=id,product_id,user_id,order_item_id,download_count,max_downloads,expires_at,created_at`,
           {
             method: "GET",
             headers: {
@@ -1033,7 +1033,10 @@ export async function PATCH(
       }
 
       const orderItems = Array.isArray(itemsData)
-        ? (itemsData as Array<{ id: string }>)
+        ? (itemsData as Array<{
+            id: string;
+            product_id: string | null;
+          }>)
         : [];
 
       for (const item of orderItems) {
@@ -1124,6 +1127,168 @@ export async function PATCH(
                 status: 500,
               }
             );
+          }
+        }
+      }
+
+      /*
+        Mirror the payment webhook behavior for manually confirmed
+        orders: create ZonixAssets-side AI rental onboarding rows.
+      */
+
+      const supabaseSecretKey =
+        process.env.SUPABASE_SECRET_KEY;
+
+      const productIds =
+        Array.from(
+          new Set(
+            orderItems
+              .map(
+                (item) =>
+                  item.product_id
+              )
+              .filter(
+                (
+                  id
+                ): id is string =>
+                  Boolean(id)
+              )
+          )
+        );
+
+      if (
+        supabaseSecretKey &&
+        productIds.length > 0
+      ) {
+        const productFilter =
+          productIds
+            .map(
+              (id) =>
+                `"${id}"`
+            )
+            .join(",");
+
+        const typesResponse =
+          await fetch(
+            `${auth.supabaseUrl}/rest/v1/products?id=in.(${encodeURIComponent(
+              productFilter
+            )})&select=id,product_type`,
+            {
+              headers: {
+                apikey:
+                  auth.supabaseKey,
+                Authorization:
+                  `Bearer ${auth.accessToken}`,
+              },
+              cache:
+                "no-store",
+            }
+          );
+
+        const typesData =
+          await typesResponse
+            .json()
+            .catch(
+              () => []
+            );
+
+        if (typesResponse.ok) {
+          const typeMap =
+            new Map(
+              (
+                Array.isArray(
+                  typesData
+                )
+                  ? typesData
+                  : []
+              ).map(
+                (
+                  product: {
+                    id: string;
+                    product_type?: string | null;
+                  }
+                ) => [
+                  product.id,
+                  String(
+                    product.product_type ||
+                      "DIGITAL_DOWNLOAD"
+                  ).toUpperCase(),
+                ]
+              )
+            );
+
+          for (const item of orderItems) {
+            if (
+              !item.product_id ||
+              typeMap.get(
+                item.product_id
+              ) !== "AI_RENTAL"
+            ) {
+              continue;
+            }
+
+            const existingRentalResponse =
+              await fetch(
+                `${auth.supabaseUrl}/rest/v1/ai_rentals?order_item_id=eq.${encodeURIComponent(
+                  item.id
+                )}&select=id`,
+                {
+                  headers: {
+                    apikey:
+                      supabaseSecretKey,
+                    Authorization:
+                      `Bearer ${supabaseSecretKey}`,
+                  },
+                  cache:
+                    "no-store",
+                }
+              );
+
+            const existingRentalData =
+              await existingRentalResponse
+                .json()
+                .catch(
+                  () => []
+                );
+
+            if (
+              existingRentalResponse.ok &&
+              Array.isArray(
+                existingRentalData
+              ) &&
+              existingRentalData.length === 0
+            ) {
+              await fetch(
+                `${auth.supabaseUrl}/rest/v1/ai_rentals`,
+                {
+                  method:
+                    "POST",
+                  headers: {
+                    "Content-Type":
+                      "application/json",
+                    apikey:
+                      supabaseSecretKey,
+                    Authorization:
+                      `Bearer ${supabaseSecretKey}`,
+                    Prefer:
+                      "return=minimal",
+                  },
+                  body:
+                    JSON.stringify(
+                      {
+                        user_id:
+                          existingOrder.user_id,
+                        order_item_id:
+                          item.id,
+                        product_id:
+                          item.product_id,
+                        status:
+                          "PENDING_SETUP",
+                      }
+                    ),
+                }
+              );
+            }
           }
         }
       }

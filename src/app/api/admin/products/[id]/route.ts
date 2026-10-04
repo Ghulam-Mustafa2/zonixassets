@@ -14,6 +14,7 @@ type ProductRow = {
   slug: string;
   description: string | null;
   category: string;
+  product_type: string | null;
   price: number | string;
   featured: boolean;
   is_active: boolean;
@@ -29,6 +30,7 @@ type UpdateProductBody = {
   slug?: string;
   description?: string;
   category?: string;
+  productType?: string;
   price?: number | string;
   featured?: boolean;
   isActive?: boolean;
@@ -274,7 +276,7 @@ export async function GET(
     const response = await fetch(
       `${auth.supabaseUrl}/rest/v1/products?id=eq.${encodeURIComponent(
         productId
-      )}&select=id,title,slug,description,category,price,featured,is_active,file_path,image_url,image_url_2,image_url_3,created_at`,
+      )}&select=id,title,slug,description,category,product_type,price,featured,is_active,file_path,image_url,image_url_2,image_url_3,created_at`,
       {
         method: "GET",
         headers: {
@@ -340,6 +342,9 @@ export async function GET(
             product.description || "",
           category:
             product.category,
+          productType:
+            product.product_type ||
+            "DIGITAL_DOWNLOAD",
           price:
             Number(product.price || 0),
           featured:
@@ -674,6 +679,42 @@ export async function PATCH(
 
       updates.category =
         category;
+    }
+
+    /*
+      Product type
+    */
+
+    if (
+      body.productType !== undefined
+    ) {
+      const productType =
+        typeof body.productType ===
+        "string"
+          ? body.productType
+              .trim()
+              .toUpperCase()
+          : "";
+
+      if (
+        productType !==
+          "DIGITAL_DOWNLOAD" &&
+        productType !==
+          "AI_RENTAL"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Unsupported product type.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      updates.product_type =
+        productType;
     }
 
     /*
