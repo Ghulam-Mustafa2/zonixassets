@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 type AdminAuthSuccess = {
   ok: true;
@@ -241,20 +242,33 @@ export async function POST(
       return auth.response;
     }
 
-    const formData =
-      await request.formData();
+    const payload =
+      await request
+        .json()
+        .catch(() => null);
 
-    const uploadedFile =
-      formData.get("file");
+    const originalFileName =
+      String(
+        payload?.fileName || ""
+      ).trim();
 
-    if (
-      !uploadedFile ||
-      !(uploadedFile instanceof File)
-    ) {
+    const fileSize =
+      Number(
+        payload?.fileSize || 0
+      );
+
+    const mimeType =
+      String(
+        payload?.mimeType ||
+          "application/octet-stream"
+      ).trim() ||
+      "application/octet-stream";
+
+    if (!originalFileName) {
       return NextResponse.json(
         {
           error:
-            "Product file is required.",
+            "Product file name is required.",
         },
         {
           status: 400,
@@ -263,12 +277,13 @@ export async function POST(
     }
 
     if (
-      uploadedFile.size <= 0
+      !Number.isFinite(fileSize) ||
+      fileSize <= 0
     ) {
       return NextResponse.json(
         {
           error:
-            "Selected file is empty.",
+            "Selected file is empty or invalid.",
         },
         {
           status: 400,
@@ -277,7 +292,7 @@ export async function POST(
     }
 
     if (
-      uploadedFile.size >
+      fileSize >
       MAX_FILE_SIZE
     ) {
       return NextResponse.json(
@@ -293,7 +308,7 @@ export async function POST(
 
     const safeName =
       sanitizeFileName(
-        uploadedFile.name
+        originalFileName
       );
 
     const finalName =
@@ -306,62 +321,65 @@ export async function POST(
     const storagePath =
       `products/${uniqueFileName}`;
 
-    const fileBuffer =
-      await uploadedFile.arrayBuffer();
+    /*
+      Important:
+      Do not proxy the actual product file through this Next.js route.
+      Serverless hosts such as Vercel can reject request bodies well
+      below the 50 MB product limit.
 
-    const uploadResponse =
-      await fetch(
-        `${auth.supabaseUrl}/storage/v1/object/product-files/${storagePath
-          .split("/")
-          .map((part) =>
-            encodeURIComponent(part)
-          )
-          .join("/")}`,
+      Instead, this authenticated admin-only route creates a short-lived
+      signed upload token. The browser then uploads the file directly to
+      Supabase Storage, bypassing the serverless request-body limit.
+    */
+    const supabase =
+      createClient(
+        auth.supabaseUrl,
+        auth.supabaseKey,
         {
-          method: "POST",
-
-          headers: {
-            apikey:
-              auth.supabaseKey,
-
-            Authorization:
-              `Bearer ${auth.accessToken}`,
-
-            "Content-Type":
-              uploadedFile.type ||
-              "application/octet-stream",
-
-            "x-upsert": "false",
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
           },
-
-          body: fileBuffer,
+          global: {
+            headers: {
+              Authorization:
+                `Bearer ${auth.accessToken}`,
+            },
+          },
         }
       );
 
-    const uploadResult =
-      await uploadResponse
-        .json()
-        .catch(() => null);
+    const {
+      data: signedUpload,
+      error: signedUploadError,
+    } =
+      await supabase.storage
+        .from("product-files")
+        .createSignedUploadUrl(
+          storagePath,
+          {
+            upsert: false,
+          }
+        );
 
-    if (!uploadResponse.ok) {
+    if (
+      signedUploadError ||
+      !signedUpload?.token
+    ) {
       console.error(
-        "PRODUCT_FILE_UPLOAD_ERROR:",
-        uploadResult
+        "PRODUCT_FILE_SIGNED_UPLOAD_ERROR:",
+        signedUploadError
       );
 
       return NextResponse.json(
         {
           error:
-            uploadResult?.message ||
-            uploadResult?.error ||
-            "Unable to upload product file.",
-
-          details:
-            uploadResult,
+            signedUploadError?.message ||
+            "Unable to prepare product file upload.",
         },
         {
-          status:
-            uploadResponse.status,
+          status: 400,
         }
       );
     }
@@ -376,17 +394,18 @@ export async function POST(
           finalName,
 
         size:
-          uploadedFile.size,
+          fileSize,
 
-        mimeType:
-          uploadedFile.type ||
-          "application/octet-stream",
+        mimeType,
+
+        token:
+          signedUpload.token,
 
         message:
-          "Product file uploaded successfully.",
+          "Product file upload authorized.",
       },
       {
-        status: 201,
+        status: 200,
       }
     );
   } catch (error) {
@@ -398,7 +417,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Something went wrong while uploading the product file.",
+          "Something went wrong while preparing the product file upload.",
       },
       {
         status: 500,
