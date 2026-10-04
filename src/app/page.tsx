@@ -36,6 +36,7 @@ type Product = {
   description?: string | null;
   category?: string | null;
   price?: number | string | null;
+  productType?: string | null;
   imageUrl?: string | null;
   image_url?: string | null;
 };
@@ -873,6 +874,8 @@ function MovingProductRail({ products }: { products: Product[] }) {
 
 function SingleFeaturedProduct({ product }: { product: Product }) {
   const image = productImage(product, 0);
+  const isAIRental =
+    String(product.productType || "").toUpperCase() === "AI_RENTAL";
   const productHref = `/products/${product.slug}`;
 
   return (
@@ -921,7 +924,7 @@ function SingleFeaturedProduct({ product }: { product: Product }) {
             </p>
             <p className="mt-1 flex items-center gap-1.5 whitespace-nowrap text-[10px] font-semibold text-slate-400">
               <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
-              Instant access
+              {isAIRental ? "Managed setup after payment" : "Instant access"}
             </p>
           </div>
 
@@ -948,6 +951,8 @@ function ProductCard({
 }) {
   const image = productImage(product, index);
   const productHref = `/products/${product.slug}`;
+  const isAIRental =
+    String(product.productType || "").toUpperCase() === "AI_RENTAL";
 
   return (
     <article className="group flex min-w-0 flex-col overflow-hidden rounded-[22px] border border-slate-200/90 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_20px_45px_rgba(15,23,42,0.11)]">
@@ -1005,7 +1010,7 @@ function ProductCard({
               </p>
               <p className="mt-0.5 flex items-center gap-1 whitespace-nowrap text-[8px] font-semibold text-slate-400 sm:mt-1 sm:gap-1.5 sm:text-[10px]">
                 <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 sm:h-2 sm:w-2" />
-                Instant access
+                {isAIRental ? "Managed setup after payment" : "Instant access"}
               </p>
             </div>
 
