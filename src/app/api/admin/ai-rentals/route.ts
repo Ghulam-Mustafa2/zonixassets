@@ -36,13 +36,9 @@ async function getAdminAuth() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  const secretKey =
-    process.env.SUPABASE_SECRET_KEY;
-
   if (
     !supabaseUrl ||
-    !publicKey ||
-    !secretKey
+    !publicKey
   ) {
     return {
       error:
@@ -50,7 +46,6 @@ async function getAdminAuth() {
       status: 500,
       supabaseUrl: null,
       publicKey: null,
-      secretKey: null,
       accessToken: null,
       userId: null,
     };
@@ -71,7 +66,6 @@ async function getAdminAuth() {
       status: 401,
       supabaseUrl,
       publicKey,
-      secretKey,
       accessToken: null,
       userId: null,
     };
@@ -105,7 +99,6 @@ async function getAdminAuth() {
       status: 401,
       supabaseUrl,
       publicKey,
-      secretKey,
       accessToken,
       userId: null,
     };
@@ -150,7 +143,6 @@ async function getAdminAuth() {
       status: 403,
       supabaseUrl,
       publicKey,
-      secretKey,
       accessToken,
       userId:
         String(user.id),
@@ -170,7 +162,6 @@ async function getAdminAuth() {
       status: 403,
       supabaseUrl,
       publicKey,
-      secretKey,
       accessToken,
       userId:
         String(user.id),
@@ -189,13 +180,14 @@ async function getAdminAuth() {
   };
 }
 
-function serviceHeaders(
-  secretKey: string
+function adminHeaders(
+  publicKey: string,
+  accessToken: string
 ) {
   return {
-    apikey: secretKey,
+    apikey: publicKey,
     Authorization:
-      `Bearer ${secretKey}`,
+      `Bearer ${accessToken}`,
   };
 }
 
@@ -206,7 +198,8 @@ export async function GET() {
   if (
     auth.error ||
     !auth.supabaseUrl ||
-    !auth.secretKey
+    !auth.publicKey ||
+    !auth.accessToken
   ) {
     return NextResponse.json(
       {
@@ -223,8 +216,9 @@ export async function GET() {
       `${auth.supabaseUrl}/rest/v1/ai_rentals?select=*&order=created_at.desc`,
       {
         headers:
-          serviceHeaders(
-            auth.secretKey
+          adminHeaders(
+            auth.publicKey,
+            auth.accessToken
           ),
         cache:
           "no-store",
@@ -296,9 +290,10 @@ export async function GET() {
         )})&select=id,email`,
         {
           headers:
-            serviceHeaders(
-              auth.secretKey
-            ),
+            adminHeaders(
+            auth.publicKey,
+            auth.accessToken
+          ),
           cache:
             "no-store",
         }
@@ -346,9 +341,10 @@ export async function GET() {
         )})&select=id,product_title`,
         {
           headers:
-            serviceHeaders(
-              auth.secretKey
-            ),
+            adminHeaders(
+            auth.publicKey,
+            auth.accessToken
+          ),
           cache:
             "no-store",
         }
@@ -412,7 +408,8 @@ export async function PATCH(
   if (
     auth.error ||
     !auth.supabaseUrl ||
-    !auth.secretKey
+    !auth.publicKey ||
+    !auth.accessToken
   ) {
     return NextResponse.json(
       {
@@ -527,8 +524,9 @@ export async function PATCH(
         headers: {
           "Content-Type":
             "application/json",
-          ...serviceHeaders(
-            auth.secretKey
+          ...adminHeaders(
+            auth.publicKey,
+            auth.accessToken
           ),
           Prefer:
             "return=representation",
