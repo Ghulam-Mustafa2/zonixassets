@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+type ProductCategoryRow = {
+  category?: string | null;
+};
+
 type Category = {
   title: string;
   slug: string;
@@ -11,7 +15,7 @@ type Category = {
   featuredLabel: string;
 };
 
-const categories: Category[] = [
+const DEFAULT_CATEGORIES: Omit<Category, "number">[] = [
   {
     title: "Website Templates",
     slug: "website-templates",
@@ -19,7 +23,6 @@ const categories: Category[] = [
     description:
       "Polished website layouts for startups, creators, agencies and modern businesses.",
     tags: ["Landing Pages", "Business Sites", "Portfolios"],
-    number: "01",
     icon: "⌘",
     featuredLabel: "Launch-ready",
   },
@@ -30,7 +33,6 @@ const categories: Category[] = [
     description:
       "Reusable screens, dashboards and interface systems for products, apps and SaaS experiences.",
     tags: ["Dashboards", "App Screens", "Design Systems"],
-    number: "02",
     icon: "◫",
     featuredLabel: "Creator favorite",
   },
@@ -41,7 +43,6 @@ const categories: Category[] = [
     description:
       "Creative graphics for campaigns, social media, mockups, presentations and branding.",
     tags: ["Social Graphics", "Mockups", "Marketing"],
-    number: "03",
     icon: "✦",
     featuredLabel: "Visual assets",
   },
@@ -52,16 +53,94 @@ const categories: Category[] = [
     description:
       "Useful digital resources designed to simplify workflows and speed up creative work.",
     tags: ["Creator Tools", "Workflow", "Productivity"],
-    number: "04",
     icon: "⚡",
     featuredLabel: "Workflow ready",
   },
 ];
 
-export default function CategoriesPage() {
+function createSlug(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+async function getCategories(): Promise<Category[]> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  const dynamicNames: string[] = [];
+
+  if (supabaseUrl && supabaseKey) {
+    try {
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/products?select=category&is_active=eq.true&order=category.asc`,
+        {
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (response.ok) {
+        const data = (await response.json()) as ProductCategoryRow[];
+
+        data.forEach((row) => {
+          const value = row.category?.trim();
+          if (value) dynamicNames.push(value);
+        });
+      } else {
+        console.error(
+          "CATEGORIES_FETCH_ERROR:",
+          await response.text()
+        );
+      }
+    } catch (error) {
+      console.error("CATEGORIES_FETCH_ERROR:", error);
+    }
+  }
+
+  const bySlug = new Map<string, Omit<Category, "number">>();
+
+  DEFAULT_CATEGORIES.forEach((category) => {
+    bySlug.set(category.slug, category);
+  });
+
+  dynamicNames.forEach((name) => {
+    const slug = createSlug(name);
+
+    if (!slug || bySlug.has(slug)) {
+      return;
+    }
+
+    bySlug.set(slug, {
+      title: name,
+      slug,
+      eyebrow: "Digital Collection",
+      description:
+        `Explore ${name} products available in the ZonixAssets store.`,
+      tags: ["Digital Products", "Instant Access", "Secure Checkout"],
+      icon: "✦",
+      featuredLabel: "Store collection",
+    });
+  });
+
+  return Array.from(bySlug.values()).map((category, index) => ({
+    ...category,
+    number: String(index + 1).padStart(2, "0"),
+  }));
+}
+
+export default async function CategoriesPage() {
+  const categories = await getCategories();
+
   return (
     <main className="min-h-screen bg-[#f4f7fb] text-[#071126]">
-      {/* HERO */}
       <section className="relative overflow-hidden bg-[#0b1220] text-white">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -left-24 bottom-[-9rem] h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
@@ -79,11 +158,14 @@ export default function CategoriesPage() {
 
               <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[1.02] tracking-[-0.05em] sm:text-5xl lg:text-[66px]">
                 Find the right digital asset
-                <span className="block text-white/60">for your next project.</span>
+                <span className="block text-white/60">
+                  for your next project.
+                </span>
               </h1>
 
               <p className="mt-5 max-w-2xl text-sm leading-7 text-white/55 sm:text-base sm:leading-8">
-                Explore focused collections of templates, UI kits, graphics and creator tools — all organized for fast discovery.
+                Explore every active store category — including new categories
+                created from the admin product form.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -104,7 +186,7 @@ export default function CategoriesPage() {
 
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {[
-                ["04", "Categories"],
+                [String(categories.length).padStart(2, "0"), "Categories"],
                 ["Curated", "Digital Store"],
                 ["24/7", "Account access"],
                 ["Instant", "Digital delivery"],
@@ -130,7 +212,6 @@ export default function CategoriesPage() {
         </div>
       </section>
 
-      {/* COLLECTIONS */}
       <section className="mx-auto max-w-7xl px-5 py-12 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
         <div className="flex flex-col gap-4 border-b border-[#dfe5ee] pb-7 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -142,7 +223,8 @@ export default function CategoriesPage() {
             </h2>
           </div>
           <p className="max-w-xl text-sm leading-7 text-[#60708d] sm:text-right">
-            Each collection is organized to help you move from idea to the right asset quickly.
+            Categories are generated from the active products in your store, so
+            new collections appear automatically.
           </p>
         </div>
 
@@ -199,7 +281,9 @@ export default function CategoriesPage() {
 
                 <div className="mt-7 flex items-center justify-between border-t border-[#e7ebf1] pt-5">
                   <div>
-                    <p className="text-sm font-black text-[#071126]">Explore Collection</p>
+                    <p className="text-sm font-black text-[#071126]">
+                      Explore Collection
+                    </p>
                     <p className="mt-1 text-[10px] font-semibold text-[#95a1b4]">
                       {category.featuredLabel}
                     </p>
@@ -220,46 +304,6 @@ export default function CategoriesPage() {
         </div>
       </section>
 
-      {/* DIGITAL STORE STRIP */}
-      <section className="mx-auto max-w-7xl px-5 pb-12 sm:px-6 sm:pb-14 lg:px-8">
-        <div className="overflow-hidden rounded-[28px] border border-[#dde4ed] bg-white shadow-[0_20px_55px_rgba(7,17,38,0.07)]">
-          <div className="grid md:grid-cols-[1.15fr_.85fr]">
-            <div className="bg-[#0b1220] p-7 text-white sm:p-9">
-              <p className="text-[9px] font-black uppercase tracking-[0.17em] text-orange-300">
-                Built for creators
-              </p>
-              <h2 className="mt-3 text-3xl font-black tracking-[-0.04em] sm:text-4xl">
-                Less clutter. Faster discovery.
-              </h2>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/50">
-                Every category keeps browsing focused, clear and easy to scan across desktop and mobile.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-3 divide-x divide-[#e4e9f0] bg-white">
-              {[
-                ["01", "Focused", "Clear structure"],
-                ["02", "Curated", "Useful assets"],
-                ["03", "Ready", "Quick access"],
-              ].map(([number, title, text]) => (
-                <div key={number} className="p-5 sm:p-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#ff6b00]">
-                    {number}
-                  </p>
-                  <p className="mt-5 text-lg font-black text-[#071126] sm:text-xl">
-                    {title}
-                  </p>
-                  <p className="mt-3 text-xs leading-6 text-[#71809a] sm:text-sm">
-                    {text}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
       <section className="mx-auto max-w-7xl px-5 pb-16 sm:px-6 sm:pb-20 lg:px-8">
         <div className="relative overflow-hidden rounded-[28px] bg-[#0b1220] px-7 py-9 text-white sm:px-9 sm:py-10 lg:flex lg:items-center lg:justify-between">
           <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-orange-500/15 blur-3xl" />
