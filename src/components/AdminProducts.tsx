@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 
 type Product = {
   id: string;
@@ -219,15 +220,50 @@ export default function AdminProducts() {
       setError("");
       setSuccess("");
 
-      const formData = new FormData();
-      formData.append("file", file);
+      const maxFileSize =
+        50 * 1024 * 1024;
 
+      if (
+        file.size <= 0
+      ) {
+        throw new Error(
+          "Selected file is empty."
+        );
+      }
+
+      if (
+        file.size >
+        maxFileSize
+      ) {
+        throw new Error(
+          "Product file must be 50 MB or smaller."
+        );
+      }
+
+      /*
+        Step 1:
+        Ask our authenticated admin API for a short-lived signed
+        upload token. Only tiny JSON metadata goes through Vercel,
+        so large product files never hit the serverless body limit.
+      */
       const response = await fetch(
         "/api/admin/products/upload-file",
         {
           method: "POST",
           credentials: "include",
-          body: formData,
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            fileName:
+              file.name,
+            fileSize:
+              file.size,
+            mimeType:
+              file.type ||
+              "application/octet-stream",
+          }),
         }
       );
 
@@ -249,10 +285,78 @@ export default function AdminProducts() {
 
       if (
         !response.ok ||
-        !data?.storagePath
+        !data?.storagePath ||
+        !data?.token
       ) {
         throw new Error(
           data?.error ||
+            "Unable to prepare product file upload."
+        );
+      }
+
+      const supabaseUrl =
+        process.env
+          .NEXT_PUBLIC_SUPABASE_URL;
+
+      const supabaseKey =
+        process.env
+          .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+        process.env
+          .NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (
+        !supabaseUrl ||
+        !supabaseKey
+      ) {
+        throw new Error(
+          "Supabase is not configured."
+        );
+      }
+
+      /*
+        Step 2:
+        Upload the file directly from the browser to Supabase
+        Storage using the signed token. This bypasses Vercel's
+        request-body limit while keeping the bucket private.
+      */
+      const supabase =
+        createClient(
+          supabaseUrl,
+          supabaseKey,
+          {
+            auth: {
+              persistSession: false,
+              autoRefreshToken: false,
+              detectSessionInUrl: false,
+            },
+          }
+        );
+
+      const {
+        error:
+          directUploadError,
+      } =
+        await supabase.storage
+          .from("product-files")
+          .uploadToSignedUrl(
+            String(
+              data.storagePath
+            ),
+            String(
+              data.token
+            ),
+            file,
+            {
+              contentType:
+                file.type ||
+                "application/octet-stream",
+              upsert: false,
+            }
+          );
+
+      if (directUploadError) {
+        throw new Error(
+          directUploadError.message ||
             "Unable to upload product file."
         );
       }
@@ -285,7 +389,6 @@ export default function AdminProducts() {
       setUploadingFile(false);
     }
   }
-
 
   async function uploadProductImage(
     file: File,
