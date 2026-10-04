@@ -14,6 +14,7 @@ type Category = {
 type DatabaseProduct = {
   id: string;
   category_id: string | null;
+  category?: string | null;
   title: string;
   slug: string;
   short_description: string | null;
@@ -41,6 +42,14 @@ type ProductsPageProps = {
     sort?: string;
   }>;
 };
+
+function createCategorySlug(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 async function getStoreData() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -87,13 +96,58 @@ async function getStoreData() {
   }
 
   const databaseProducts: DatabaseProduct[] = await productsResponse.json();
-  const categories: Category[] = await categoriesResponse.json();
+  const databaseCategories: Category[] = await categoriesResponse.json();
 
-  const products: Product[] = databaseProducts.map((product) => ({
-    ...product,
-    category:
-      categories.find((item) => item.id === product.category_id) ?? null,
-  }));
+  const categoryMap = new Map<string, Category>();
+
+  databaseCategories.forEach((category) => {
+    categoryMap.set(category.slug, category);
+  });
+
+  databaseProducts.forEach((product) => {
+    const customName = product.category?.trim();
+
+    if (!customName) {
+      return;
+    }
+
+    const slug = createCategorySlug(customName);
+
+    if (!slug || categoryMap.has(slug)) {
+      return;
+    }
+
+    categoryMap.set(slug, {
+      id: `dynamic-${slug}`,
+      name: customName,
+      slug,
+      description: null,
+    });
+  });
+
+  const categories = Array.from(categoryMap.values()).sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
+  const products: Product[] = databaseProducts.map((product) => {
+    const linkedCategory =
+      categories.find((item) => item.id === product.category_id) ?? null;
+
+    const customName = product.category?.trim() || "";
+    const customSlug = customName
+      ? createCategorySlug(customName)
+      : "";
+
+    const dynamicCategory =
+      customSlug
+        ? categories.find((item) => item.slug === customSlug) ?? null
+        : null;
+
+    return {
+      ...product,
+      category: linkedCategory ?? dynamicCategory,
+    };
+  });
 
   return { products, categories };
 }
