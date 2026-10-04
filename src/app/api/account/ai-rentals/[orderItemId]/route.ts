@@ -209,7 +209,7 @@ async function repairMissingRental(
     await fetch(
       `${supabaseUrl}/rest/v1/products?id=eq.${encodeURIComponent(
         String(item.product_id)
-      )}&product_type=eq.AI_RENTAL&select=id,product_type&limit=1`,
+      )}&select=id,product_type&limit=1`,
       {
         headers,
         cache: "no-store",
@@ -226,6 +226,38 @@ async function repairMissingRental(
     !Array.isArray(productData) ||
     !productData[0]?.id
   ) {
+    return {
+      ok: false,
+      status: 404,
+      error:
+        "The purchased product record could not be found.",
+    };
+  }
+
+  const purchasedProductType =
+    String(
+      productData[0]?.product_type ||
+        ""
+    )
+      .trim()
+      .toUpperCase();
+
+  if (
+    purchasedProductType !==
+      "AI_RENTAL"
+  ) {
+    console.error(
+      "AI_RENTAL_SELF_HEAL_TYPE_MISMATCH",
+      {
+        orderItemId,
+        productId:
+          String(item.product_id),
+        productType:
+          productData[0]?.product_type ??
+          null,
+      }
+    );
+
     return {
       ok: false,
       status: 404,
