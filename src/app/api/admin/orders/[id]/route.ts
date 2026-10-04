@@ -50,7 +50,7 @@ type RouteContext = {
 
 function secretHeaders(
   secretKey: string
-) {
+): Record<string, string> {
   if (
     secretKey.startsWith(
       "sb_secret_"
