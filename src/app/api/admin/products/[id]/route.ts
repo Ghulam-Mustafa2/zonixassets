@@ -276,7 +276,7 @@ export async function GET(
     const response = await fetch(
       `${auth.supabaseUrl}/rest/v1/products?id=eq.${encodeURIComponent(
         productId
-      )}&select=id,title,slug,description,category,price,featured,is_active,file_path,image_url,image_url_2,image_url_3,created_at`,
+      )}&select=id,title,slug,description,category,product_type,price,featured,is_active,file_path,image_url,image_url_2,image_url_3,created_at`,
       {
         method: "GET",
         headers: {
@@ -342,6 +342,9 @@ export async function GET(
             product.description || "",
           category:
             product.category,
+          productType:
+            product.product_type ||
+            "DIGITAL_DOWNLOAD",
           price:
             Number(product.price || 0),
           featured:
