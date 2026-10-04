@@ -50,7 +50,6 @@ async function getAdminAuth() {
       status: 500,
       supabaseUrl: null,
       publicKey: null,
-      secretKey: null,
       accessToken: null,
       userId: null,
     };
@@ -108,52 +107,6 @@ async function getAdminAuth() {
       secretKey,
       accessToken,
       userId: null,
-    };
-  }
-
-  const profileResponse =
-    await fetch(
-      `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(
-        user.id
-      )}&select=id,role,is_active`,
-      {
-        headers: {
-          apikey:
-            publicKey,
-          Authorization:
-            `Bearer ${accessToken}`,
-        },
-        cache:
-          "no-store",
-      }
-    );
-
-  const profileData =
-    await profileResponse.json();
-
-  const profile =
-    Array.isArray(profileData)
-      ? profileData[0]
-      : null;
-
-  if (
-    !profileResponse.ok ||
-    !profile ||
-    profile.is_active === false ||
-    String(
-      profile.role || ""
-    ).toUpperCase() !== "ADMIN"
-  ) {
-    return {
-      error:
-        "You do not have permission to manage AI rentals.",
-      status: 403,
-      supabaseUrl,
-      publicKey,
-      secretKey,
-      accessToken,
-      userId:
-        String(user.id),
     };
   }
 
@@ -297,8 +250,8 @@ export async function GET() {
         {
           headers:
             serviceHeaders(
-              auth.secretKey
-            ),
+            auth.secretKey
+          ),
           cache:
             "no-store",
         }
@@ -347,8 +300,8 @@ export async function GET() {
         {
           headers:
             serviceHeaders(
-              auth.secretKey
-            ),
+            auth.secretKey
+          ),
           cache:
             "no-store",
         }
