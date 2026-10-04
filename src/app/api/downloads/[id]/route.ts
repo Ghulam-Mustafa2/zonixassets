@@ -37,6 +37,34 @@ type RouteContext = {
   }>;
 };
 
+const EXTERNAL_DELIVERY_PREFIX = "external:";
+
+function getValidatedExternalDeliveryUrl(filePath: string) {
+  if (!filePath.startsWith(EXTERNAL_DELIVERY_PREFIX)) {
+    return null;
+  }
+
+  const rawUrl = filePath
+    .slice(EXTERNAL_DELIVERY_PREFIX.length)
+    .trim();
+
+  if (!rawUrl) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(rawUrl);
+
+    if (parsedUrl.protocol !== "https:") {
+      return null;
+    }
+
+    return parsedUrl.toString();
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(
   request: Request,
   context: RouteContext
@@ -452,6 +480,87 @@ export async function GET(
             "No downloadable file has been uploaded for this product yet.",
         },
         { status: 404 }
+      );
+    }
+
+    const externalDeliveryUrl =
+      getValidatedExternalDeliveryUrl(
+        filePath
+      );
+
+    if (
+      filePath.startsWith(
+        EXTERNAL_DELIVERY_PREFIX
+      )
+    ) {
+      if (!externalDeliveryUrl) {
+        return NextResponse.json(
+          {
+            error:
+              "This product has an invalid external delivery link.",
+          },
+          { status: 500 }
+        );
+      }
+
+      /*
+        External delivery still uses the same entitlement,
+        expiry and max-download checks. The real external URL
+        is never returned by the public product pages.
+      */
+
+      const newDownloadCount =
+        currentCount + 1;
+
+      const updateResponse =
+        await fetch(
+          `${supabaseUrl}/rest/v1/downloads?id=eq.${encodeURIComponent(
+            download.id
+          )}&user_id=eq.${encodeURIComponent(
+            userData.id
+          )}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type":
+                "application/json",
+              apikey: supabaseKey,
+              Authorization:
+                `Bearer ${accessToken}`,
+              Prefer:
+                "return=representation",
+            },
+            body: JSON.stringify({
+              download_count:
+                newDownloadCount,
+            }),
+          }
+        );
+
+      const updatedDownloadData =
+        await updateResponse.json();
+
+      if (!updateResponse.ok) {
+        console.error(
+          "EXTERNAL_DOWNLOAD_COUNT_UPDATE_ERROR:",
+          updatedDownloadData
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              updatedDownloadData?.message ||
+              "Unable to update download count.",
+          },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.redirect(
+        externalDeliveryUrl,
+        {
+          status: 302,
+        }
       );
     }
 

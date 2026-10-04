@@ -49,6 +49,19 @@ const emptyForm: ProductForm = {
   imageUrl3: "",
 };
 
+const EXTERNAL_DELIVERY_PREFIX = "external:";
+
+function isExternalDeliveryPath(value: string) {
+  return value.trim().startsWith(EXTERNAL_DELIVERY_PREFIX);
+}
+
+function getExternalDeliveryUrl(value: string) {
+  const trimmed = value.trim();
+  return isExternalDeliveryPath(trimmed)
+    ? trimmed.slice(EXTERNAL_DELIVERY_PREFIX.length)
+    : "";
+}
+
 const PRODUCT_CATEGORIES = [
   "Website Templates",
   "UI Kits",
@@ -1121,86 +1134,168 @@ export default function AdminProducts() {
 
                 <FormSection
                   number="02"
-                  title="Download file"
-                  helper="Upload the digital asset customers receive after purchase."
+                  title="Product delivery"
+                  helper="Choose a private Supabase file or a secure external delivery link for large products."
                 >
-                  <div className="rounded-[24px] border border-[#dce4ef] bg-[#f7f9fc] p-5">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="font-black text-[#081529]">
-                          Product download file
-                        </p>
-                        <p className="mt-2 max-w-xl text-sm leading-6 text-[#718099]">
-                          Upload directly to the private{" "}
-                          <strong>product-files</strong> bucket. Maximum file
-                          size: 50 MB.
-                        </p>
+                  <div className="space-y-5">
+                    <div className="rounded-[24px] border border-[#dce4ef] bg-[#f7f9fc] p-5">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="font-black text-[#081529]">
+                            Option A — Upload product file
+                          </p>
+                          <p className="mt-2 max-w-xl text-sm leading-6 text-[#718099]">
+                            Upload directly to the private{" "}
+                            <strong>product-files</strong> bucket. Maximum file
+                            size: 50 MB.
+                          </p>
+                        </div>
+
+                        <label
+                          className={`inline-flex shrink-0 cursor-pointer items-center justify-center rounded-2xl bg-[#081529] px-5 py-3.5 text-sm font-black text-white transition hover:bg-[#ff6500] ${
+                            uploadingFile
+                              ? "pointer-events-none opacity-50"
+                              : ""
+                          }`}
+                        >
+                          {uploadingFile
+                            ? "Uploading..."
+                            : !isExternalDeliveryPath(form.filePath) &&
+                                form.filePath.trim()
+                              ? "Replace File"
+                              : "Upload File"}
+
+                          <input
+                            type="file"
+                            disabled={uploadingFile}
+                            className="hidden"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+
+                              if (file) {
+                                uploadProductFile(file);
+                              }
+
+                              event.currentTarget.value = "";
+                            }}
+                          />
+                        </label>
                       </div>
 
-                      <label
-                        className={`inline-flex shrink-0 cursor-pointer items-center justify-center rounded-2xl bg-[#081529] px-5 py-3.5 text-sm font-black text-white transition hover:bg-[#ff6500] ${
-                          uploadingFile
-                            ? "pointer-events-none opacity-50"
-                            : ""
-                        }`}
-                      >
-                        {uploadingFile
-                          ? "Uploading..."
-                          : form.filePath.trim()
-                            ? "Replace File"
-                            : "Upload File"}
+                      <div className="mt-5">
+                        <label className="text-xs font-black uppercase tracking-[0.14em] text-[#9aa8bb]">
+                          Supabase storage path
+                        </label>
 
-                        <input
-                          type="file"
-                          disabled={uploadingFile}
-                          className="hidden"
-                          onChange={(event) => {
-                            const file = event.target.files?.[0];
-
-                            if (file) {
-                              uploadProductFile(file);
+                        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                          <input
+                            type="text"
+                            value={
+                              isExternalDeliveryPath(form.filePath)
+                                ? ""
+                                : form.filePath
                             }
+                            onChange={(event) =>
+                              handleChange("filePath", event.target.value)
+                            }
+                            placeholder="products/your-product.zip"
+                            className="min-w-0 flex-1 rounded-2xl border border-[#dce4ef] bg-white px-4 py-3.5 text-sm font-semibold text-[#081529] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#ff9b5c] focus:ring-4 focus:ring-orange-100"
+                          />
 
-                            event.currentTarget.value = "";
-                          }}
-                        />
-                      </label>
+                          {!isExternalDeliveryPath(form.filePath) &&
+                            form.filePath.trim() && (
+                              <button
+                                type="button"
+                                disabled={uploadingFile}
+                                onClick={() =>
+                                  handleChange("filePath", "")
+                                }
+                                className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                Clear
+                              </button>
+                            )}
+                        </div>
+
+                        <p className="mt-2 break-all text-xs text-[#9aa8bb]">
+                          {!isExternalDeliveryPath(form.filePath) &&
+                          form.filePath.trim()
+                            ? `Assigned private file: ${form.filePath}`
+                            : "No Supabase file assigned."}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="mt-5">
-                      <label className="text-xs font-black uppercase tracking-[0.14em] text-[#9aa8bb]">
-                        Storage file path
-                      </label>
+                    <div className="rounded-[24px] border border-orange-200 bg-orange-50/70 p-5">
+                      <div className="flex items-start gap-3">
+                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white font-black text-[#ff6500] shadow-sm">
+                          ↗
+                        </div>
 
-                      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                        <input
-                          type="text"
-                          value={form.filePath}
-                          onChange={(event) =>
-                            handleChange("filePath", event.target.value)
-                          }
-                          placeholder="products/your-product.zip"
-                          className="min-w-0 flex-1 rounded-2xl border border-[#dce4ef] bg-white px-4 py-3.5 text-sm font-semibold text-[#081529] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#ff9b5c] focus:ring-4 focus:ring-orange-100"
-                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-black text-[#081529]">
+                            Option B — Google Drive / external delivery
+                          </p>
+                          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#718099]">
+                            For large products, upload the file to Google Drive
+                            or another HTTPS host, then paste the customer access
+                            URL below. The link stays hidden from the public
+                            product page and is only released through the secure
+                            download endpoint after a paid purchase.
+                          </p>
 
-                        {form.filePath.trim() && (
-                          <button
-                            type="button"
-                            disabled={uploadingFile}
-                            onClick={() =>
-                              handleChange("filePath", "")
-                            }
-                            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            Clear
-                          </button>
-                        )}
+                          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                            <input
+                              type="url"
+                              value={getExternalDeliveryUrl(form.filePath)}
+                              onChange={(event) => {
+                                const value = event.target.value;
+
+                                handleChange(
+                                  "filePath",
+                                  value.trim()
+                                    ? `${EXTERNAL_DELIVERY_PREFIX}${value}`
+                                    : ""
+                                );
+                              }}
+                              placeholder="https://drive.google.com/file/d/..."
+                              className="min-w-0 flex-1 rounded-2xl border border-orange-200 bg-white px-4 py-3.5 text-sm font-semibold text-[#081529] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#ff9b5c] focus:ring-4 focus:ring-orange-100"
+                            />
+
+                            {isExternalDeliveryPath(form.filePath) && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleChange("filePath", "")
+                                }
+                                className="rounded-2xl border border-red-200 bg-white px-4 py-3.5 text-sm font-black text-red-700 transition hover:bg-red-50"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+
+                          <p className="mt-3 text-xs leading-5 text-[#9a6a4d]">
+                            Tip: in Google Drive, use a share link that the buyer
+                            can open. Anyone who receives that Drive link can
+                            potentially share it again, so this protects access
+                            before purchase but cannot prevent resharing after
+                            delivery.
+                          </p>
+                        </div>
                       </div>
+                    </div>
 
-                      <p className="mt-2 break-all text-xs text-[#9aa8bb]">
-                        {form.filePath.trim()
-                          ? `Assigned: ${form.filePath}`
-                          : "No product file assigned yet."}
+                    <div className="rounded-2xl border border-[#dce4ef] bg-white px-4 py-3.5">
+                      <p className="text-xs font-black uppercase tracking-[0.14em] text-[#9aa8bb]">
+                        Current delivery
+                      </p>
+                      <p className="mt-2 break-all text-sm font-bold text-[#53627a]">
+                        {isExternalDeliveryPath(form.filePath)
+                          ? "External secure delivery link configured"
+                          : form.filePath.trim()
+                            ? `Private Supabase file: ${form.filePath}`
+                            : "No product delivery assigned yet."}
                       </p>
                     </div>
                   </div>
