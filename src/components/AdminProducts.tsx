@@ -99,6 +99,8 @@ export default function AdminProducts() {
   const [success, setSuccess] = useState("");
 
   const [search, setSearch] = useState("");
+  const [customCategoryMode, setCustomCategoryMode] =
+    useState(false);
 
   const [editingId, setEditingId] =
     useState<string | null>(null);
@@ -190,6 +192,29 @@ export default function AdminProducts() {
       );
     }, [products, search]);
 
+  const categoryOptions = useMemo(() => {
+    const values = [
+      ...PRODUCT_CATEGORIES,
+      ...products
+        .map((product) => product.category?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ];
+
+    const unique = new Map<string, string>();
+
+    values.forEach((value) => {
+      const key = value.toLowerCase();
+
+      if (!unique.has(key)) {
+        unique.set(key, value);
+      }
+    });
+
+    return Array.from(unique.values()).sort((a, b) =>
+      a.localeCompare(b)
+    );
+  }, [products]);
+
   function handleChange(
     field: keyof ProductForm,
     value: string | boolean
@@ -221,6 +246,7 @@ export default function AdminProducts() {
   function resetForm() {
     setForm(emptyForm);
     setEditingId(null);
+    setCustomCategoryMode(false);
     setError("");
   }
 
@@ -571,6 +597,8 @@ export default function AdminProducts() {
 
   function startEdit(product: Product) {
     setEditingId(product.id);
+
+    setCustomCategoryMode(false);
 
     setForm({
       title: product.title,
@@ -1089,19 +1117,62 @@ export default function AdminProducts() {
                       </label>
 
                       <select
-                        value={form.category}
-                        onChange={(event) =>
-                          handleChange("category", event.target.value)
+                        value={
+                          customCategoryMode
+                            ? "__create_new__"
+                            : form.category
                         }
+                        onChange={(event) => {
+                          const value = event.target.value;
+
+                          if (value === "__create_new__") {
+                            setCustomCategoryMode(true);
+                            handleChange("category", "");
+                            return;
+                          }
+
+                          setCustomCategoryMode(false);
+                          handleChange("category", value);
+                        }}
                         className="mt-2 w-full rounded-2xl border border-[#dce4ef] bg-[#f7f9fc] px-4 py-3.5 font-semibold text-[#081529] outline-none transition focus:border-[#ff9b5c] focus:bg-white focus:ring-4 focus:ring-orange-100"
                       >
                         <option value="">Select a category</option>
-                        {PRODUCT_CATEGORIES.map((category) => (
+                        {categoryOptions.map((category) => (
                           <option key={category} value={category}>
                             {category}
                           </option>
                         ))}
+                        <option value="__create_new__">
+                          + Create new category
+                        </option>
                       </select>
+
+                      {customCategoryMode && (
+                        <div className="mt-3 rounded-2xl border border-orange-200 bg-orange-50/70 p-4">
+                          <label className="text-xs font-black uppercase tracking-[0.14em] text-[#ff6500]">
+                            New category name
+                          </label>
+                          <input
+                            type="text"
+                            value={form.category}
+                            onChange={(event) =>
+                              handleChange(
+                                "category",
+                                event.target.value
+                              )
+                            }
+                            placeholder="e.g. AI Prompts, E-books, Fonts, Courses"
+                            maxLength={80}
+                            autoFocus
+                            className="mt-2 w-full rounded-xl border border-orange-200 bg-white px-4 py-3 text-sm font-semibold text-[#081529] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#ff9b5c] focus:ring-4 focus:ring-orange-100"
+                          />
+                          <p className="mt-2 text-xs leading-5 text-[#9a6a4d]">
+                            This category will be saved with the product and
+                            will automatically appear in the store category
+                            pages after the product is published.
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <Field
