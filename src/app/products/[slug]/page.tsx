@@ -255,6 +255,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   const relatedProducts = await getRelatedProducts(product);
+  const isAIRental =
+    String(
+      product.product_type ||
+        ""
+    ).toUpperCase() ===
+    "AI_RENTAL";
   const price = formatPrice(product.price);
   const features = getFeatures(product);
   const productImages = [
@@ -424,8 +430,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   {[
                     ["Secure checkout", "Protected purchase"],
-                    ["Digital delivery", "No shipping needed"],
-                    ["Account access", "Download after payment"],
+                    [
+                      isAIRental ? "Managed setup" : "Digital delivery",
+                      isAIRental ? "Configured after purchase" : "No shipping needed",
+                    ],
+                    [
+                      "Account access",
+                      isAIRental ? "Configure your AI after payment" : "Download after payment",
+                    ],
                     ["Customer support", "Help when needed"],
                   ].map(([title, subtitle]) => (
                     <div
@@ -447,10 +459,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     </div>
                     <div>
                       <p className="text-sm font-black text-[#0b1025]">
-                        Download after payment
+                        {isAIRental
+                          ? "Configure after payment"
+                          : "Download after payment"}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-slate-600">
-                        Your purchased files become available inside your Zonix Assets account after payment confirmation.
+                        {isAIRental
+                          ? "After payment, open your Zonix Assets account and submit your business details. Your branded AI integration will be delivered there after provisioning."
+                          : "Your purchased files become available inside your Zonix Assets account after payment confirmation."}
                       </p>
                     </div>
                   </div>
@@ -493,7 +509,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   Delivery
                 </p>
                 <p className="mt-2 text-sm font-black text-[#0b1025]">
-                  Account Download
+                  {isAIRental
+                    ? "Managed AI Setup"
+                    : "Account Download"}
                 </p>
               </div>
 
@@ -544,18 +562,28 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 Simple buying process
               </p>
               <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-                From product to download in four steps.
+                {isAIRental
+                  ? "From purchase to your configured AI in four steps."
+                  : "From product to download in four steps."}
               </h2>
             </div>
           </div>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              ["01", "Review", "Check the product details and preview."],
-              ["02", "Purchase", "Complete checkout securely."],
-              ["03", "Payment", "Wait for payment confirmation."],
-              ["04", "Download", "Access your files from your account."],
-            ].map(([number, title, text]) => (
+            {(isAIRental
+              ? [
+                  ["01", "Review", "Check the service details and included AI features."],
+                  ["02", "Purchase", "Complete checkout securely."],
+                  ["03", "Configure", "Submit your business, branding and AI instructions."],
+                  ["04", "Activate", "Receive your embed code and API access in your account."],
+                ]
+              : [
+                  ["01", "Review", "Check the product details and preview."],
+                  ["02", "Purchase", "Complete checkout securely."],
+                  ["03", "Payment", "Wait for payment confirmation."],
+                  ["04", "Download", "Access your files from your account."],
+                ]
+            ).map(([number, title, text]) => (
               <div
                 key={number}
                 className="rounded-2xl border border-slate-200 bg-[#f8fafc] p-5"
@@ -582,13 +610,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </p>
 
               <h2 className="mt-2 max-w-2xl text-2xl font-black tracking-tight text-[#0b1025] sm:text-3xl">
-                How to pay and get your digital product.
+                {isAIRental
+                  ? "How to purchase and activate your AI service."
+                  : "How to pay and get your digital product."}
               </h2>
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                Buying from Zonix Assets is simple. Choose your product, complete
-                the secure checkout, wait for payment confirmation, then download
-                your files from your account.
+                {isAIRental
+                  ? "Buy the AI rental, complete secure checkout, submit your business setup, and receive your branded website integration from your Zonix Assets account."
+                  : "Buying from Zonix Assets is simple. Choose your product, complete the secure checkout, wait for payment confirmation, then download your files from your account."}
               </p>
 
               <div className="mt-7 grid gap-3 sm:grid-cols-2">
@@ -610,7 +640,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   ],
                   [
                     "04",
-                    "Download from account",
+                    isAIRental ? "Activate your AI" : "Download from account",
                     "Open your Zonix Assets account and access your purchased files.",
                   ],
                 ].map(([number, title, text]) => (
@@ -865,13 +895,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <div className="overflow-hidden rounded-[30px] bg-gradient-to-br from-[#0b1025] to-[#172554] px-6 py-8 text-white shadow-[0_22px_60px_rgba(15,23,42,0.18)] sm:px-10 sm:py-10 lg:flex lg:items-center lg:justify-between lg:gap-8">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.16em] text-orange-400">
-              Ready to download?
+              {isAIRental
+                ? "Ready to automate your business?"
+                : "Ready to download?"}
             </p>
             <h2 className="mt-2 text-2xl font-black sm:text-3xl">
               Get {product.title}
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65">
-              Complete your purchase and access the product from your Zonix Assets account after payment confirmation.
+              {isAIRental
+                ? "Complete your purchase, configure your business, and receive your branded AI integration in your Zonix Assets account."
+                : "Complete your purchase and access the product from your Zonix Assets account after payment confirmation."}
             </p>
           </div>
 
