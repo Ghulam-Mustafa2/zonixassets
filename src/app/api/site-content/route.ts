@@ -44,6 +44,9 @@ function normalizeProduct(product: AnyRow) {
       text(product.type) ||
       "Digital Product",
     price: num(product.price),
+    productType:
+      text(product.product_type) ||
+      "DIGITAL_DOWNLOAD",
     imageUrl:
       text(product.image_url) ||
       text(product.thumbnail_url) ||
