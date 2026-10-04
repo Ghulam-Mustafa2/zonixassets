@@ -56,6 +56,76 @@ const categoryMap: Record<string, CategoryInfo> = {
   },
 };
 
+function createSlug(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function getCategoryInfo(
+  slug: string,
+  products: Product[]
+): CategoryInfo | null {
+  const defaultCategory = categoryMap[slug];
+
+  if (defaultCategory) {
+    return defaultCategory;
+  }
+
+  const matchingProduct = products.find((product) => {
+    const categoryName = product.category?.trim() || "";
+    return categoryName && createSlug(categoryName) === slug;
+  });
+
+  const title = matchingProduct?.category?.trim();
+
+  if (!title) {
+    return null;
+  }
+
+  return {
+    title,
+    eyebrow: "Digital Collection",
+    description:
+      `Explore ${title} products available in the ZonixAssets store.`,
+    categoryNames: [title],
+  };
+}
+
+function getStoreCategories(products: Product[]) {
+  const categories = new Map<string, CategoryInfo>();
+
+  Object.entries(categoryMap).forEach(([categorySlug, info]) => {
+    categories.set(categorySlug, info);
+  });
+
+  products.forEach((product) => {
+    const title = product.category?.trim();
+
+    if (!title) {
+      return;
+    }
+
+    const categorySlug = createSlug(title);
+
+    if (!categorySlug || categories.has(categorySlug)) {
+      return;
+    }
+
+    categories.set(categorySlug, {
+      title,
+      eyebrow: "Digital Collection",
+      description:
+        `Explore ${title} products available in the ZonixAssets store.`,
+      categoryNames: [title],
+    });
+  });
+
+  return Array.from(categories.entries());
+}
+
 function formatPrice(value: Product["price"]) {
   const amount = Number(value ?? 0);
 
@@ -117,11 +187,11 @@ export default async function CategoryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const category = categoryMap[slug];
+  const allProducts = await getProducts();
+  const category = getCategoryInfo(slug, allProducts);
 
   if (!category) notFound();
 
-  const allProducts = await getProducts();
   const products = allProducts.filter((product) => {
     const productCategory = product.category?.trim().toLowerCase() || "";
     return category.categoryNames.some(
@@ -129,7 +199,7 @@ export default async function CategoryPage({
     );
   });
 
-  const otherCategories = Object.entries(categoryMap).filter(
+  const otherCategories = getStoreCategories(allProducts).filter(
     ([categorySlug]) => categorySlug !== slug
   );
 
