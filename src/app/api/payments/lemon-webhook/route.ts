@@ -111,7 +111,7 @@ function parseBooleanEnv(
 
 function serviceHeaders(
   supabaseSecretKey: string
-) {
+): Record<string, string> {
   if (
     supabaseSecretKey.startsWith(
       "sb_secret_"
