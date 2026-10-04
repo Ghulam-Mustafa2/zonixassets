@@ -243,6 +243,7 @@ export default function AdminDashboard() {
           <nav className="hidden items-center gap-2 lg:flex">
             <AdminNav href="/admin">Dashboard</AdminNav>
             <AdminNav href="/admin/products">Products</AdminNav>
+            <AdminNav href="/admin/ai-rentals">AI Rentals</AdminNav>
             <AdminNav href="/admin/orders">Orders</AdminNav>
             <AdminNav href="/admin/customers">Customers</AdminNav>
             <AdminNav href="/admin/support">Support Chats</AdminNav>
@@ -369,7 +370,8 @@ export default function AdminDashboard() {
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <ActionCard href="/admin/site-settings" eyebrow="CMS" title="Site Settings" description="Manage branding, homepage content, social links and promotions." icon="01" />
             <ActionCard href="/admin/content-pages" eyebrow="Content" title="Content Pages" description="Edit About, Contact, Privacy, Terms, Support and Refund Policy content." icon="02" />
-            <ActionCard href="/admin/products" eyebrow="Products" title="Manage Products" description="Add, edit and manage digital products, images and downloadable files." icon="03" highlighted />
+            <ActionCard href="/admin/products" eyebrow="Products" title="Manage Products" description="Add downloads, external delivery products and managed AI rentals." icon="03" highlighted />
+            <ActionCard href="/admin/ai-rentals" eyebrow="AI Services" title="AI Rentals" description="Review customer onboarding and publish GM AI integration access." icon="AI" highlighted />
             <ActionCard href="/admin/orders" eyebrow="Orders" title="Manage Orders" description="Review purchases, payment states and order details." icon="04" />
             <ActionCard href="/admin/customers" eyebrow="Customers" title="Customer Accounts" description="Review account status, roles, purchases and access." icon="05" />
             <ActionCard href="/admin/support" eyebrow="Support" title="Support Chats" description="Read customer conversations, reply to messages and close resolved chats." icon="06" highlighted />
