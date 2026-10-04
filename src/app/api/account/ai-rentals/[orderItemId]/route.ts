@@ -99,6 +99,242 @@ function customerHeaders(
   };
 }
 
+function serviceHeaders(
+  secretKey: string
+): Record<string, string> {
+  if (
+    secretKey.startsWith(
+      "sb_secret_"
+    )
+  ) {
+    return {
+      apikey: secretKey,
+    };
+  }
+
+  return {
+    apikey: secretKey,
+    Authorization:
+      `Bearer ${secretKey}`,
+  };
+}
+
+const rentalSelect =
+  "id,user_id,order_item_id,product_id,business_name,website_url,logo_url,brand_color,allowed_origin,welcome_message,system_prompt,lead_capture_enabled,lead_goal,monthly_quota,status,gm_client_name,gm_client_slug,gm_embed_code,gm_api_endpoint,expires_at,created_at,updated_at";
+
+async function repairMissingRental(
+  supabaseUrl: string,
+  secretKey: string,
+  userId: string,
+  orderItemId: string
+) {
+  const headers =
+    serviceHeaders(secretKey);
+
+  const itemResponse =
+    await fetch(
+      `${supabaseUrl}/rest/v1/order_items?id=eq.${encodeURIComponent(
+        orderItemId
+      )}&select=id,order_id,product_id&limit=1`,
+      {
+        headers,
+        cache: "no-store",
+      }
+    );
+
+  const itemData =
+    await itemResponse
+      .json()
+      .catch(() => null);
+
+  if (!itemResponse.ok) {
+    return {
+      ok: false,
+      status: 500,
+      error:
+        "Unable to verify this AI rental purchase.",
+    };
+  }
+
+  const item =
+    Array.isArray(itemData)
+      ? itemData[0]
+      : null;
+
+  if (
+    !item?.id ||
+    !item?.order_id ||
+    !item?.product_id
+  ) {
+    return {
+      ok: false,
+      status: 404,
+      error:
+        "AI rental access was not found for this purchase.",
+    };
+  }
+
+  const orderResponse =
+    await fetch(
+      `${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(
+        String(item.order_id)
+      )}&user_id=eq.${encodeURIComponent(
+        userId
+      )}&status=eq.PAID&select=id&limit=1`,
+      {
+        headers,
+        cache: "no-store",
+      }
+    );
+
+  const orderData =
+    await orderResponse
+      .json()
+      .catch(() => null);
+
+  if (
+    !orderResponse.ok ||
+    !Array.isArray(orderData) ||
+    !orderData[0]?.id
+  ) {
+    return {
+      ok: false,
+      status: 404,
+      error:
+        "A paid AI rental purchase could not be verified.",
+    };
+  }
+
+  const productResponse =
+    await fetch(
+      `${supabaseUrl}/rest/v1/products?id=eq.${encodeURIComponent(
+        String(item.product_id)
+      )}&product_type=eq.AI_RENTAL&select=id,product_type&limit=1`,
+      {
+        headers,
+        cache: "no-store",
+      }
+    );
+
+  const productData =
+    await productResponse
+      .json()
+      .catch(() => null);
+
+  if (
+    !productResponse.ok ||
+    !Array.isArray(productData) ||
+    !productData[0]?.id
+  ) {
+    return {
+      ok: false,
+      status: 404,
+      error:
+        "This purchase is not an AI rental product.",
+    };
+  }
+
+  const existingResponse =
+    await fetch(
+      `${supabaseUrl}/rest/v1/ai_rentals?order_item_id=eq.${encodeURIComponent(
+        orderItemId
+      )}&select=id,user_id&limit=1`,
+      {
+        headers,
+        cache: "no-store",
+      }
+    );
+
+  const existingData =
+    await existingResponse
+      .json()
+      .catch(() => null);
+
+  if (!existingResponse.ok) {
+    return {
+      ok: false,
+      status: 500,
+      error:
+        "Unable to verify AI rental provisioning.",
+    };
+  }
+
+  const existing =
+    Array.isArray(existingData)
+      ? existingData[0]
+      : null;
+
+  if (existing?.id) {
+    if (
+      String(existing.user_id) !==
+      userId
+    ) {
+      return {
+        ok: false,
+        status: 409,
+        error:
+          "This AI rental is linked to a different customer.",
+      };
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      error: null,
+    };
+  }
+
+  const createResponse =
+    await fetch(
+      `${supabaseUrl}/rest/v1/ai_rentals`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+          ...headers,
+          Prefer:
+            "return=minimal",
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          order_item_id:
+            orderItemId,
+          product_id:
+            String(item.product_id),
+          status:
+            "PENDING_SETUP",
+        }),
+        cache: "no-store",
+      }
+    );
+
+  if (!createResponse.ok) {
+    const detail =
+      await createResponse
+        .text()
+        .catch(() => "");
+
+    console.error(
+      "AI_RENTAL_SELF_HEAL_CREATE_ERROR",
+      detail
+    );
+
+    return {
+      ok: false,
+      status: 500,
+      error:
+        "Your payment is confirmed, but the AI rental setup could not be created yet.",
+    };
+  }
+
+  return {
+    ok: true,
+    status: 200,
+    error: null,
+  };
+}
+
 export async function GET(
   _request: Request,
   context: RouteContext
@@ -141,62 +377,115 @@ export async function GET(
     );
   }
 
-  const response =
-    await fetch(
-      `${auth.supabaseUrl}/rest/v1/ai_rentals?user_id=eq.${encodeURIComponent(
-        auth.userId
-      )}&order_item_id=eq.${encodeURIComponent(
-        id
-      )}&select=id,user_id,order_item_id,product_id,business_name,website_url,logo_url,brand_color,allowed_origin,welcome_message,system_prompt,lead_capture_enabled,lead_goal,monthly_quota,status,gm_client_name,gm_client_slug,gm_embed_code,gm_api_endpoint,expires_at,created_at,updated_at`,
-      {
-        headers:
-          customerHeaders(
-            auth.supabaseKey,
-            auth.accessToken
-          ),
-        cache:
-          "no-store",
-      }
-    );
+  const loadRental =
+    async () => {
+      const response =
+        await fetch(
+          `${auth.supabaseUrl}/rest/v1/ai_rentals?user_id=eq.${encodeURIComponent(
+            auth.userId
+          )}&order_item_id=eq.${encodeURIComponent(
+            id
+          )}&select=${rentalSelect}`,
+          {
+            headers:
+              customerHeaders(
+                auth.supabaseKey,
+                auth.accessToken
+              ),
+            cache:
+              "no-store",
+          }
+        );
 
-  const data =
-    await response.json();
+      const data =
+        await response.json();
 
-  if (!response.ok) {
+      return {
+        response,
+        data,
+        rental:
+          Array.isArray(data)
+            ? data[0]
+            : null,
+      };
+    };
+
+  let loaded =
+    await loadRental();
+
+  if (!loaded.response.ok) {
     return NextResponse.json(
       {
         error:
-          data?.message ||
+          loaded.data?.message ||
           "Unable to load your AI rental.",
       },
       {
         status:
-          response.status || 500,
+          loaded.response.status ||
+          500,
       }
     );
   }
 
-  const rental =
-    Array.isArray(data)
-      ? data[0]
-      : null;
+  if (!loaded.rental) {
+    const secretKey =
+      process.env.SUPABASE_SECRET_KEY;
 
-  if (!rental) {
-    return NextResponse.json(
-      {
-        error:
-          "AI rental access was not found for this purchase.",
-      },
-      {
-        status: 404,
-      }
-    );
+    if (!secretKey) {
+      return NextResponse.json(
+        {
+          error:
+            "Your payment is confirmed, but AI rental provisioning is not configured on the server.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    const repair =
+      await repairMissingRental(
+        auth.supabaseUrl,
+        secretKey,
+        auth.userId,
+        id
+      );
+
+    if (!repair.ok) {
+      return NextResponse.json(
+        {
+          error: repair.error,
+        },
+        {
+          status: repair.status,
+        }
+      );
+    }
+
+    loaded =
+      await loadRental();
+
+    if (
+      !loaded.response.ok ||
+      !loaded.rental
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Your payment is confirmed, but the AI rental setup is still being prepared. Please refresh in a moment.",
+        },
+        {
+          status: 503,
+        }
+      );
+    }
   }
 
   return NextResponse.json(
     {
       success: true,
-      rental,
+      rental: loaded.rental,
     }
   );
 }
