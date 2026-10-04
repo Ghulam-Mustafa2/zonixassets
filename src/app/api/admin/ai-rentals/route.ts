@@ -36,9 +36,13 @@ async function getAdminAuth() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  const secretKey =
+    process.env.SUPABASE_SECRET_KEY;
+
   if (
     !supabaseUrl ||
-    !publicKey
+    !publicKey ||
+    !secretKey
   ) {
     return {
       error:
@@ -66,6 +70,7 @@ async function getAdminAuth() {
       status: 401,
       supabaseUrl,
       publicKey,
+      secretKey,
       accessToken: null,
       userId: null,
     };
@@ -99,53 +104,9 @@ async function getAdminAuth() {
       status: 401,
       supabaseUrl,
       publicKey,
+      secretKey,
       accessToken,
       userId: null,
-    };
-  }
-
-  const profileResponse =
-    await fetch(
-      `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(
-        user.id
-      )}&select=id,role,is_active`,
-      {
-        headers: {
-          apikey:
-            publicKey,
-          Authorization:
-            `Bearer ${accessToken}`,
-        },
-        cache:
-          "no-store",
-      }
-    );
-
-  const profileData =
-    await profileResponse.json();
-
-  const profile =
-    Array.isArray(profileData)
-      ? profileData[0]
-      : null;
-
-  if (
-    !profileResponse.ok ||
-    !profile ||
-    profile.is_active === false ||
-    String(
-      profile.role || ""
-    ).toUpperCase() !== "ADMIN"
-  ) {
-    return {
-      error:
-        "You do not have permission to manage AI rentals.",
-      status: 403,
-      supabaseUrl,
-      publicKey,
-      accessToken,
-      userId:
-        String(user.id),
     };
   }
 
@@ -162,6 +123,7 @@ async function getAdminAuth() {
       status: 403,
       supabaseUrl,
       publicKey,
+      secretKey,
       accessToken,
       userId:
         String(user.id),
@@ -180,14 +142,13 @@ async function getAdminAuth() {
   };
 }
 
-function adminHeaders(
-  publicKey: string,
-  accessToken: string
+function serviceHeaders(
+  secretKey: string
 ) {
   return {
-    apikey: publicKey,
+    apikey: secretKey,
     Authorization:
-      `Bearer ${accessToken}`,
+      `Bearer ${secretKey}`,
   };
 }
 
@@ -198,8 +159,7 @@ export async function GET() {
   if (
     auth.error ||
     !auth.supabaseUrl ||
-    !auth.publicKey ||
-    !auth.accessToken
+    !auth.secretKey
   ) {
     return NextResponse.json(
       {
@@ -216,9 +176,8 @@ export async function GET() {
       `${auth.supabaseUrl}/rest/v1/ai_rentals?select=*&order=created_at.desc`,
       {
         headers:
-          adminHeaders(
-            auth.publicKey,
-            auth.accessToken
+          serviceHeaders(
+            auth.secretKey
           ),
         cache:
           "no-store",
@@ -290,9 +249,8 @@ export async function GET() {
         )})&select=id,email`,
         {
           headers:
-            adminHeaders(
-            auth.publicKey,
-            auth.accessToken
+            serviceHeaders(
+            auth.secretKey
           ),
           cache:
             "no-store",
@@ -341,9 +299,8 @@ export async function GET() {
         )})&select=id,product_title`,
         {
           headers:
-            adminHeaders(
-            auth.publicKey,
-            auth.accessToken
+            serviceHeaders(
+            auth.secretKey
           ),
           cache:
             "no-store",
@@ -408,8 +365,7 @@ export async function PATCH(
   if (
     auth.error ||
     !auth.supabaseUrl ||
-    !auth.publicKey ||
-    !auth.accessToken
+    !auth.secretKey
   ) {
     return NextResponse.json(
       {
@@ -524,9 +480,8 @@ export async function PATCH(
         headers: {
           "Content-Type":
             "application/json",
-          ...adminHeaders(
-            auth.publicKey,
-            auth.accessToken
+          ...serviceHeaders(
+            auth.secretKey
           ),
           Prefer:
             "return=representation",
