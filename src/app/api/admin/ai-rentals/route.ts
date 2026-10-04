@@ -144,7 +144,7 @@ async function getAdminAuth() {
 
 function serviceHeaders(
   secretKey: string
-) {
+): Record<string, string> {
   /*
     Supabase's newer sb_secret_* keys are API keys, not JWTs.
     They belong in the apikey header and must not be sent as a
