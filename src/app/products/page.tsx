@@ -31,8 +31,9 @@ type DatabaseProduct = {
   created_at: string;
 };
 
-type Product = DatabaseProduct & {
+type Product = Omit<DatabaseProduct, "category"> & {
   category: Category | null;
+  categoryName: string | null;
 };
 
 type ProductsPageProps = {
@@ -143,9 +144,17 @@ async function getStoreData() {
         ? categories.find((item) => item.slug === customSlug) ?? null
         : null;
 
+    const {
+      category: _rawCategory,
+      ...productWithoutRawCategory
+    } = product;
+
     return {
-      ...product,
-      category: linkedCategory ?? dynamicCategory,
+      ...productWithoutRawCategory,
+      category:
+        linkedCategory ?? dynamicCategory,
+      categoryName:
+        customName || null,
     };
   });
 
@@ -182,7 +191,15 @@ function buildUrl({
   return queryString ? `/products?${queryString}` : "/products";
 }
 
-function getProductImage(product: DatabaseProduct) {
+function getProductImage(
+  product: Pick<
+    DatabaseProduct,
+    | "preview_url"
+    | "image_url"
+    | "image_url_2"
+    | "image_url_3"
+  >
+) {
   return (
     product.preview_url?.trim() ||
     product.image_url?.trim() ||
