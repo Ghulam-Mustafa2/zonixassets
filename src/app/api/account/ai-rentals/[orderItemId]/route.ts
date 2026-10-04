@@ -124,11 +124,19 @@ const rentalSelect =
 
 async function repairMissingRental(
   supabaseUrl: string,
+  supabaseKey: string,
+  accessToken: string,
   secretKey: string,
   userId: string,
   orderItemId: string
 ) {
-  const headers =
+  const readHeaders =
+    customerHeaders(
+      supabaseKey,
+      accessToken
+    );
+
+  const serviceAuthHeaders =
     serviceHeaders(secretKey);
 
   const itemResponse =
@@ -137,7 +145,7 @@ async function repairMissingRental(
         orderItemId
       )}&select=id,order_id,product_id&limit=1`,
       {
-        headers,
+        headers: readHeaders,
         cache: "no-store",
       }
     );
@@ -182,7 +190,7 @@ async function repairMissingRental(
         userId
       )}&status=eq.PAID&select=id&limit=1`,
       {
-        headers,
+        headers: readHeaders,
         cache: "no-store",
       }
     );
@@ -211,7 +219,7 @@ async function repairMissingRental(
         String(item.product_id)
       )}&select=id,product_type&limit=1`,
       {
-        headers,
+        headers: readHeaders,
         cache: "no-store",
       }
     );
@@ -272,7 +280,8 @@ async function repairMissingRental(
         orderItemId
       )}&select=id,user_id&limit=1`,
       {
-        headers,
+        headers:
+          serviceAuthHeaders,
         cache: "no-store",
       }
     );
@@ -324,7 +333,7 @@ async function repairMissingRental(
         headers: {
           "Content-Type":
             "application/json",
-          ...headers,
+          ...serviceAuthHeaders,
           Prefer:
             "return=minimal",
         },
@@ -479,6 +488,8 @@ export async function GET(
     const repair =
       await repairMissingRental(
         auth.supabaseUrl,
+        auth.supabaseKey,
+        auth.accessToken,
         secretKey,
         auth.userId,
         id
