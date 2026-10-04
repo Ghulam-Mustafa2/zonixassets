@@ -37,6 +37,8 @@ type DownloadItem = {
   productId?: string;
   title: string;
   type?: string;
+  productType?: string;
+  orderItemId?: string;
   downloadUrl?: string | null;
   downloadCount?: number;
   maxDownloads?: number;
@@ -902,6 +904,52 @@ function DownloadGrid({ downloads }: { downloads: DownloadItem[] }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {downloads.map((product) => {
+        const isAIRental =
+          String(
+            product.productType || ""
+          ).toUpperCase() ===
+          "AI_RENTAL";
+
+        if (
+          isAIRental &&
+          product.orderItemId
+        ) {
+          return (
+            <article
+              key={product.id}
+              className="overflow-hidden rounded-[24px] border border-cyan-200 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.04)]"
+            >
+              <div className="relative flex aspect-[16/9] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,.28),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(255,101,0,.20),transparent_30%),#071222]">
+                <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] [background-size:34px_34px]" />
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-2xl font-black text-white backdrop-blur-sm">
+                  AI
+                </div>
+              </div>
+
+              <div className="p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-600">
+                  Managed AI Rental
+                </p>
+                <h3 className="mt-2 text-lg font-black leading-snug text-[#081226]">
+                  {product.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-slate-500">
+                  Configure your business details, branding, welcome message
+                  and lead-generation instructions. Your integration details
+                  will appear after provisioning.
+                </p>
+
+                <Link
+                  href={`/account/ai-rentals/${product.orderItemId}`}
+                  className="mt-5 block w-full rounded-2xl bg-[#081226] py-3 text-center text-sm font-extrabold text-white transition hover:bg-[#13233e]"
+                >
+                  Configure Your AI
+                </Link>
+              </div>
+            </article>
+          );
+        }
+
         const usedDownloads = Number(product.downloadCount || 0);
         const maxDownloads = Number(product.maxDownloads || 10);
         const remainingDownloads = Math.max(maxDownloads - usedDownloads, 0);
