@@ -45,6 +45,13 @@ create index if not exists ai_rentals_status_idx
 
 alter table public.ai_rentals enable row level security;
 
+-- Explicit table privileges are required in addition to RLS policies.
+-- Customer requests use the authenticated role, while server-side
+-- provisioning/admin requests use the service_role role.
+revoke all on table public.ai_rentals from anon;
+grant select, update on table public.ai_rentals to authenticated;
+grant select, insert, update, delete on table public.ai_rentals to service_role;
+
 drop policy if exists "Users can view own AI rentals" on public.ai_rentals;
 create policy "Users can view own AI rentals"
 on public.ai_rentals
