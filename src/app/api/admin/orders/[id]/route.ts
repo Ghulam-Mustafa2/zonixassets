@@ -48,6 +48,26 @@ type RouteContext = {
   }>;
 };
 
+function secretHeaders(
+  secretKey: string
+) {
+  if (
+    secretKey.startsWith(
+      "sb_secret_"
+    )
+  ) {
+    return {
+      apikey: secretKey,
+    };
+  }
+
+  return {
+    apikey: secretKey,
+    Authorization:
+      `Bearer ${secretKey}`,
+  };
+}
+
 async function getAdminAuth() {
   const supabaseUrl =
     process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -1233,12 +1253,10 @@ export async function PATCH(
                   item.id
                 )}&select=id`,
                 {
-                  headers: {
-                    apikey:
-                      supabaseSecretKey,
-                    Authorization:
-                      `Bearer ${supabaseSecretKey}`,
-                  },
+                  headers:
+                    secretHeaders(
+                      supabaseSecretKey
+                    ),
                   cache:
                     "no-store",
                 }
@@ -1266,10 +1284,9 @@ export async function PATCH(
                   headers: {
                     "Content-Type":
                       "application/json",
-                    apikey:
-                      supabaseSecretKey,
-                    Authorization:
-                      `Bearer ${supabaseSecretKey}`,
+                    ...secretHeaders(
+                      supabaseSecretKey
+                    ),
                     Prefer:
                       "return=minimal",
                   },
