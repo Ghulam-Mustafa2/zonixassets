@@ -11,6 +11,7 @@ type Product = {
   slug: string;
   description: string;
   category: string;
+  productType: string;
   price: number;
   featured: boolean;
   isActive: boolean;
@@ -26,6 +27,7 @@ type ProductForm = {
   slug: string;
   description: string;
   category: string;
+  productType: string;
   price: string;
   featured: boolean;
   isActive: boolean;
@@ -40,6 +42,7 @@ const emptyForm: ProductForm = {
   slug: "",
   description: "",
   category: "",
+  productType: "DIGITAL_DOWNLOAD",
   price: "",
   featured: false,
   isActive: true,
@@ -606,6 +609,9 @@ export default function AdminProducts() {
       description:
         product.description || "",
       category: product.category,
+      productType:
+        product.productType ||
+        "DIGITAL_DOWNLOAD",
       price: String(product.price),
       featured: product.featured,
       isActive: product.isActive,
@@ -706,6 +712,9 @@ export default function AdminProducts() {
 
             category:
               form.category.trim(),
+
+            productType:
+              form.productType,
 
             price:
               numericPrice,
@@ -1175,6 +1184,35 @@ export default function AdminProducts() {
                       )}
                     </div>
 
+                    <div>
+                      <label className="text-sm font-black text-[#53627a]">
+                        Product type
+                      </label>
+
+                      <select
+                        value={form.productType}
+                        onChange={(event) =>
+                          handleChange(
+                            "productType",
+                            event.target.value
+                          )
+                        }
+                        className="mt-2 w-full rounded-2xl border border-[#dce4ef] bg-[#f7f9fc] px-4 py-3.5 font-semibold text-[#081529] outline-none transition focus:border-[#ff9b5c] focus:bg-white focus:ring-4 focus:ring-orange-100"
+                      >
+                        <option value="DIGITAL_DOWNLOAD">
+                          Digital download
+                        </option>
+                        <option value="AI_RENTAL">
+                          AI rental / managed service
+                        </option>
+                      </select>
+
+                      <p className="mt-2 text-xs leading-5 text-[#9aa8bb]">
+                        AI rentals use a post-purchase onboarding flow instead
+                        of a downloadable file.
+                      </p>
+                    </div>
+
                     <Field
                       label="Price"
                       value={form.price}
@@ -1206,8 +1244,26 @@ export default function AdminProducts() {
                 <FormSection
                   number="02"
                   title="Product delivery"
-                  helper="Choose a private Supabase file or a secure external delivery link for large products."
+                  helper={
+                    form.productType === "AI_RENTAL"
+                      ? "AI rental products are configured by the customer after payment. No downloadable file is required."
+                      : "Choose a private Supabase file or a secure external delivery link for large products."
+                  }
                 >
+                  {form.productType === "AI_RENTAL" ? (
+                    <div className="rounded-[24px] border border-cyan-200 bg-cyan-50/70 p-5">
+                      <p className="font-black text-[#081529]">
+                        Managed AI rental delivery
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-[#62738e]">
+                        After payment, the buyer will see a “Configure Your AI”
+                        workflow in their account. You can review the submitted
+                        business details in the Admin AI Rentals area, create
+                        the client in GM AI, and paste the generated embed/API
+                        details back into ZonixAssets.
+                      </p>
+                    </div>
+                  ) : (
                   <div className="space-y-5">
                     <div className="rounded-[24px] border border-[#dce4ef] bg-[#f7f9fc] p-5">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1370,6 +1426,8 @@ export default function AdminProducts() {
                       </p>
                     </div>
                   </div>
+                  </div>
+                  )}
                 </FormSection>
               </div>
 
