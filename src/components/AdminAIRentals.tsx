@@ -62,7 +62,10 @@ export default function AdminAIRentals() {
       }
 
       if (response.status === 403) {
-        router.replace("/account");
+        setError(
+          data?.error ||
+            "You do not have permission to access AI rentals."
+        );
         return;
       }
 
