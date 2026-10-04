@@ -145,6 +145,21 @@ async function getAdminAuth() {
 function serviceHeaders(
   secretKey: string
 ) {
+  /*
+    Supabase's newer sb_secret_* keys are API keys, not JWTs.
+    They belong in the apikey header and must not be sent as a
+    Bearer token. Legacy service_role JWTs still support Bearer.
+  */
+  if (
+    secretKey.startsWith(
+      "sb_secret_"
+    )
+  ) {
+    return {
+      apikey: secretKey,
+    };
+  }
+
   return {
     apikey: secretKey,
     Authorization:
