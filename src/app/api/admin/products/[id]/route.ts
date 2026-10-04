@@ -14,6 +14,7 @@ type ProductRow = {
   slug: string;
   description: string | null;
   category: string;
+  product_type: string | null;
   price: number | string;
   featured: boolean;
   is_active: boolean;
@@ -29,6 +30,7 @@ type UpdateProductBody = {
   slug?: string;
   description?: string;
   category?: string;
+  productType?: string;
   price?: number | string;
   featured?: boolean;
   isActive?: boolean;
@@ -674,6 +676,42 @@ export async function PATCH(
 
       updates.category =
         category;
+    }
+
+    /*
+      Product type
+    */
+
+    if (
+      body.productType !== undefined
+    ) {
+      const productType =
+        typeof body.productType ===
+        "string"
+          ? body.productType
+              .trim()
+              .toUpperCase()
+          : "";
+
+      if (
+        productType !==
+          "DIGITAL_DOWNLOAD" &&
+        productType !==
+          "AI_RENTAL"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Unsupported product type.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      updates.product_type =
+        productType;
     }
 
     /*
