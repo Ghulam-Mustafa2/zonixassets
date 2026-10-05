@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="10 0 160 160" role="img" aria-label="Zonix Assets Z logo">
+  <polygon points="90,10 150,45 150,115 90,150 30,115 30,45" fill="#0B1E3D" stroke="#0B1E3D" stroke-width="2"/>
+  <path d="M52 55 H124 L124 62 L70 105 H124 V118 H50 V111 L104 68 H52 Z" fill="#FFFFFF"/>
+  <rect x="46" y="78" width="88" height="10" transform="rotate(-27 90 83)" fill="#F5841F"/>
+</svg>
