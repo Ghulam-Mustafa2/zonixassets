@@ -11,8 +11,19 @@ type SiteSettings = {
   logo_url?: string | null;
 };
 
+type SocialLink = {
+  id: string;
+  platform: string;
+  label?: string | null;
+  url: string;
+  icon_key?: string | null;
+  is_visible?: boolean;
+  sort_order?: number;
+};
+
 type SiteContentResponse = {
   site?: SiteSettings | null;
+  socialLinks?: SocialLink[];
 };
 
 const quickLinks: [string, string][] = [
@@ -45,6 +56,8 @@ export default function Footer() {
     logo_url: null,
   });
 
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+
   useEffect(() => {
     async function loadSite() {
       try {
@@ -60,6 +73,15 @@ export default function Footer() {
           ...current,
           ...(data.site || {}),
         }));
+
+        setSocialLinks(
+          (data.socialLinks || [])
+            .filter((item) => item.is_visible !== false && Boolean(item.url))
+            .sort(
+              (a, b) =>
+                (a.sort_order ?? 0) - (b.sort_order ?? 0)
+            )
+        );
       } catch {
         // Keep fallback values.
       }
@@ -110,6 +132,39 @@ export default function Footer() {
                 Secure Checkout
               </span>
             </div>
+
+            {socialLinks.length > 0 && (
+              <div className="mt-5">
+                <p className="mb-2 text-[9px] font-black uppercase tracking-[0.16em] text-white/35 sm:text-[10px]">
+                  Follow us
+                </p>
+
+                <div className="flex flex-wrap gap-2.5">
+                  {socialLinks.map((item) => {
+                    const name =
+                      item.label?.trim() ||
+                      item.platform?.trim() ||
+                      "Social link";
+
+                    return (
+                      <a
+                        key={item.id || `${item.platform}-${item.url}`}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={name}
+                        title={name}
+                        className="group grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-white/70 transition hover:-translate-y-0.5 hover:border-[#ff6b00]/50 hover:bg-[#ff6b00] hover:text-white"
+                      >
+                        <SocialIcon
+                          value={item.icon_key || item.platform}
+                        />
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <FooterColumn title="Quick Links" links={quickLinks} />
@@ -286,5 +341,75 @@ function MobileFooterGroup({
         ))}
       </div>
     </details>
+  );
+}
+
+
+function SocialIcon({ value }: { value: string }) {
+  const key = value.trim().toLowerCase();
+
+  if (key.includes("facebook")) {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
+        <path d="M13.7 22v-9h3l.5-3.5h-3.5V7.3c0-1 .3-1.8 1.8-1.8h1.9V2.4c-.3 0-1.5-.1-2.8-.1-2.8 0-4.7 1.7-4.7 4.8v2.4H7v3.5h2.9v9h3.8Z" />
+      </svg>
+    );
+  }
+
+  if (key.includes("youtube")) {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
+        <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8ZM9.6 15.6V8.4L15.8 12l-6.2 3.6Z" />
+      </svg>
+    );
+  }
+
+  if (key.includes("instagram")) {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="2" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="1" className="fill-current stroke-none" />
+      </svg>
+    );
+  }
+
+  if (key.includes("linkedin")) {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
+        <path d="M5.3 7.6A2.3 2.3 0 1 1 5.3 3a2.3 2.3 0 0 1 0 4.6ZM3.3 9.2h4V21h-4V9.2Zm6.5 0h3.8v1.6h.1c.5-1 1.8-2.1 3.7-2.1 4 0 4.7 2.6 4.7 6V21h-4v-5.6c0-1.3 0-3-1.9-3s-2.2 1.4-2.2 2.9V21h-4V9.2Z" />
+      </svg>
+    );
+  }
+
+  if (key === "x" || key.includes("twitter")) {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 fill-current" aria-hidden="true">
+        <path d="M18.9 2H22l-6.8 7.8L23 22h-6.1l-4.8-6.3L6.6 22H3.5l7.2-8.2L3 2h6.3l4.3 5.7L18.9 2Zm-1.1 17.8h1.7L8.4 4.1H6.6l11.2 15.7Z" />
+      </svg>
+    );
+  }
+
+  if (key.includes("tiktok")) {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
+        <path d="M14.5 2h3.2c.2 1.5 1.1 2.9 2.4 3.7.9.6 1.8.8 2.9.8v3.2c-1.8 0-3.6-.6-5.1-1.6v7.1a6.2 6.2 0 1 1-5.3-6.1v3.3a3 3 0 1 0 2 2.8V2Z" />
+      </svg>
+    );
+  }
+
+  if (key.includes("pinterest")) {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
+        <path d="M12 2a10 10 0 0 0-3.6 19.3c-.1-1.6 0-3.4.4-5.1l1.3-5.5s-.3-.7-.3-1.8c0-1.7 1-3 2.3-3 1.1 0 1.6.8 1.6 1.8 0 1.1-.7 2.7-1 4.2-.3 1.2.6 2.2 1.8 2.2 2.2 0 3.8-2.3 3.8-5.6 0-2.9-2.1-5-5.1-5-3.5 0-5.5 2.6-5.5 5.3 0 1 .4 2.2.9 2.8.1.1.1.2.1.4l-.3 1.2c-.1.4-.4.5-.8.3-1.9-.9-3.1-3.7-3.1-5.9 0-4.8 3.5-9.2 10.1-9.2 5.3 0 9.4 3.8 9.4 8.8 0 5.3-3.3 9.5-7.9 9.5-1.5 0-3-.8-3.5-1.7l-1 3.7c-.3 1.3-1.3 3-1.9 4A10 10 0 1 0 12 2Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="2" aria-hidden="true">
+      <path d="M10.6 13.4a4 4 0 0 0 5.7 0l2.1-2.1a4 4 0 0 0-5.7-5.7l-1.2 1.2" />
+      <path d="M13.4 10.6a4 4 0 0 0-5.7 0l-2.1 2.1a4 4 0 0 0 5.7 5.7l1.2-1.2" />
+    </svg>
   );
 }
