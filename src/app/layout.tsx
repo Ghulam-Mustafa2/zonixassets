@@ -25,6 +25,15 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL ||
       "http://localhost:3000"
   ),
+  icons: {
+    icon: [
+      {
+        url: "/favicon.svg",
+        type: "image/svg+xml",
+      },
+    ],
+    shortcut: "/favicon.svg",
+  },
   openGraph: {
     title: "ZonixAssets",
     description:
