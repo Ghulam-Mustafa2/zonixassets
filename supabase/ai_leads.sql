@@ -43,3 +43,9 @@ alter table public.ai_leads enable row level security;
 -- No anon/authenticated policies are created intentionally.
 -- The storefront server writes leads using SUPABASE_SECRET_KEY,
 -- and the owner-only admin API reads them using the same server-side key.
+
+
+-- Server-side secret/service-role access.
+-- RLS stays enabled and no public anon/authenticated access is granted.
+revoke all on table public.ai_leads from anon, authenticated;
+grant select, insert, update, delete on table public.ai_leads to service_role;
