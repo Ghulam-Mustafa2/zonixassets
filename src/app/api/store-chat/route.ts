@@ -245,6 +245,12 @@ export async function POST(request: NextRequest) {
             "- If the customer asks for the cheapest product, use the cheapest product stated above.",
             "- Keep the response concise, friendly and helpful.",
             "- You may reply in English, Urdu or Roman Urdu to match the customer.",
+            "- LEAD GENERATION: If the visitor shows clear buying intent, asks for personalized help, wants follow-up, or seems ready to purchase, politely offer to take their contact details for ZonixAssets follow-up.",
+            "- Before asking for contact details, clearly say they will be used by ZonixAssets only to follow up about their enquiry or purchase interest.",
+            "- Ask for: name, email OR WhatsApp number, and which product/service they are interested in. Do not require both email and WhatsApp.",
+            "- Do not ask for contact details on every message. Ask only when it is contextually useful, and do not repeat the request if the visitor declines.",
+            "- Never ask for passwords, card details, OTPs, security codes, CNIC/passport numbers, or other sensitive information.",
+            "- If the visitor provides contact details, briefly thank them and confirm that ZonixAssets can use those details to follow up about the enquiry.",
           ].join("\n"),
         };
       }
