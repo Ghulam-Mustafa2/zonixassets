@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 
@@ -59,6 +60,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <CartProvider>{children}</CartProvider>
+
+        <Script
+          src="https://gm-ai-boss.lovable.app/api/public/embed.js?key=gmai_23295e9dc502d96e9084d7ea9a5fb6a7d15bddb38e0eb6c0"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
