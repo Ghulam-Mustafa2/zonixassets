@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -238,6 +239,65 @@ function getPrimaryImage(product: Product) {
   );
 }
 
+const SITE_URL = "https://zonixassets.shop";
+
+function getSeoDescription(product: ProductWithCategory) {
+  const raw =
+    product.short_description?.trim() ||
+    product.description?.trim() ||
+    `Download ${product.title} from ZonixAssets with secure checkout and instant digital access after payment.`;
+
+  return raw.replace(/\s+/g, " ").slice(0, 160);
+}
+
+export async function generateMetadata({
+  params,
+}: ProductPageProps): Promise<Metadata> {
+  const { slug } = await params;
+
+  try {
+    const product = await getProduct(slug);
+
+    if (!product) {
+      return {
+        title: "Product Not Found | ZonixAssets",
+        robots: { index: false, follow: false },
+      };
+    }
+
+    const description = getSeoDescription(product);
+    const canonical = `${SITE_URL}/products/${encodeURIComponent(product.slug)}`;
+    const image = getPrimaryImage(product);
+
+    return {
+      title: `${product.title} | ZonixAssets`,
+      description,
+      alternates: { canonical },
+      robots: { index: true, follow: true },
+      openGraph: {
+        type: "website",
+        url: canonical,
+        siteName: "ZonixAssets",
+        title: product.title,
+        description,
+        images: image ? [{ url: image, alt: product.title }] : undefined,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: product.title,
+        description,
+        images: image ? [image] : undefined,
+      },
+    };
+  } catch {
+    return {
+      title: "Digital Products | ZonixAssets",
+      description:
+        "Premium digital assets, templates, tools and creator resources from ZonixAssets.",
+    };
+  }
+}
+
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
 
@@ -276,9 +336,35 @@ export default async function ProductPage({ params }: ProductPageProps) {
     product.short_description?.trim() ||
     "Premium digital product with secure checkout and access from your Zonix Assets account after successful payment.";
 
+
+  const canonicalUrl = `${SITE_URL}/products/${encodeURIComponent(product.slug)}`;
+  const numericPrice = Number(product.price);
+  const seoDescription = getSeoDescription(product);
+
+  const productJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description: seoDescription,
+    url: canonicalUrl,
+    image: productImages,
+    category: product.category?.name || "Digital Product",
+    brand: {
+      "@type": "Brand",
+      name: "ZonixAssets",
+    },
+    offers: {
+      "@type": "Offer",
+      url: canonicalUrl,
+      priceCurrency: "USD",
+      price: Number.isFinite(numericPrice) ? numericPrice.toFixed(2) : "0.00",
+      availability: "https://schema.org/InStock",
+      itemCondition: "https://schema.org/NewCondition",
+    },
+  }).replace(/</g, "\\u003c");
+
   return (
-    <main className="min-h-screen bg-[#f6f7fb] text-[#0b1025]">
-      <Navbar />
+    <main className="min-h-screen bg-[#f6f7fb] text-[#0b1025]">\n      <script type="application/ld+json">{productJsonLd}</script>\n      <Navbar />
 
       {/* Breadcrumb */}
       <section className="border-b border-slate-200/80 bg-white">
