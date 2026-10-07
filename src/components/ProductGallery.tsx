@@ -25,10 +25,12 @@ export default function ProductGallery({
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [failedImages, setFailedImages] = useState<string[]>([]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     setActiveIndex(0);
     setFailedImages([]);
+    setLightboxOpen(false);
   }, [images]);
 
   const availableImages = cleanImages.filter(
@@ -39,6 +41,38 @@ export default function ProductGallery({
     availableImages[activeIndex] ||
     availableImages[0] ||
     null;
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setLightboxOpen(false);
+      }
+
+      if (event.key === "ArrowLeft" && availableImages.length > 1) {
+        setActiveIndex((current) =>
+          current <= 0 ? availableImages.length - 1 : current - 1
+        );
+      }
+
+      if (event.key === "ArrowRight" && availableImages.length > 1) {
+        setActiveIndex((current) =>
+          current >= availableImages.length - 1 ? 0 : current + 1
+        );
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [lightboxOpen, availableImages.length]);
 
   function selectImage(index: number) {
     if (!availableImages[index]) return;
@@ -67,19 +101,26 @@ export default function ProductGallery({
         <div className="relative aspect-[4/3] overflow-hidden bg-[#f3f6fa]">
           {activeImage ? (
             <>
-              <img
-                src={activeImage}
-                alt={`${title} preview ${activeIndex + 1}`}
-                onError={() =>
-                  handleImageError(activeImage)
-                }
-                className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
-              />
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(true)}
+                aria-label={`Open ${title} preview ${activeIndex + 1} fullscreen`}
+                className="absolute inset-0 z-10 cursor-zoom-in"
+              >
+                <img
+                  src={activeImage}
+                  alt={`${title} preview ${activeIndex + 1}`}
+                  onError={() =>
+                    handleImageError(activeImage)
+                  }
+                  className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
+                />
+              </button>
 
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#071027]/20 via-transparent to-transparent opacity-0 transition duration-500 group-hover:opacity-100" />
 
               <div className="pointer-events-none absolute bottom-4 right-4 translate-y-2 rounded-xl border border-white/40 bg-[#071027]/85 px-3 py-2 text-[10px] font-bold text-white opacity-0 shadow-lg backdrop-blur-md transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                Hover to preview
+                Click to enlarge
               </div>
             </>
           ) : (
@@ -185,7 +226,7 @@ export default function ProductGallery({
           </p>
 
           <p className="mt-0.5 text-[11px] text-slate-500">
-            Click a preview to view the product in detail.
+            Choose a preview, then click the main image to enlarge it.
           </p>
         </div>
 
@@ -201,6 +242,100 @@ export default function ProductGallery({
           </span>
         </div>
       </div>
+
+      {lightboxOpen && activeImage && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${title} image preview`}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#050816]/95 p-4 backdrop-blur-sm sm:p-8"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            aria-label="Close image preview"
+            className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-2xl font-light text-white transition hover:bg-white/20 sm:right-7 sm:top-7"
+          >
+            ×
+          </button>
+
+          <div
+            className="relative flex max-h-full w-full max-w-6xl flex-col items-center justify-center gap-4"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="relative flex max-h-[78vh] w-full items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-2xl">
+              <img
+                src={activeImage}
+                alt={`${title} enlarged preview ${activeIndex + 1}`}
+                className="max-h-[78vh] max-w-full object-contain"
+              />
+
+              {availableImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveIndex((current) =>
+                        current <= 0
+                          ? availableImages.length - 1
+                          : current - 1
+                      )
+                    }
+                    aria-label="Previous preview"
+                    className="absolute left-3 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-[#071027]/75 text-xl font-black text-white shadow-lg transition hover:bg-[#ff6b00] sm:left-5"
+                  >
+                    ‹
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveIndex((current) =>
+                        current >= availableImages.length - 1
+                          ? 0
+                          : current + 1
+                      )
+                    }
+                    aria-label="Next preview"
+                    className="absolute right-3 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-[#071027]/75 text-xl font-black text-white shadow-lg transition hover:bg-[#ff6b00] sm:right-5"
+                  >
+                    ›
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {availableImages.map((image, index) => (
+                <button
+                  key={image}
+                  type="button"
+                  onClick={() => setActiveIndex(index)}
+                  aria-label={`Show enlarged preview ${index + 1}`}
+                  aria-pressed={activeIndex === index}
+                  className={`h-16 w-20 overflow-hidden rounded-xl border transition sm:h-20 sm:w-24 ${
+                    activeIndex === index
+                      ? "border-[#ff6b00] ring-2 ring-[#ff6b00]/30"
+                      : "border-white/15 opacity-70 hover:opacity-100"
+                  }`}
+                >
+                  <img
+                    src={image}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+
+            <p className="text-center text-xs font-semibold text-white/60">
+              Preview {activeIndex + 1} of {availableImages.length} · Use arrow
+              keys to browse and Esc to close.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
