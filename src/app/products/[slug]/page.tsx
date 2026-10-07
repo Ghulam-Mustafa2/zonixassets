@@ -315,7 +315,12 @@ function getFeatures(product: ProductWithCategory) {
     "Download access from your ZonixAssets account",
   ].filter((item): item is string => Boolean(item));
 }
-function getPrimaryImage(product: Product) {
+function getPrimaryImage(product: {
+  image_url: string | null;
+  preview_url: string | null;
+  image_url_2: string | null;
+  image_url_3: string | null;
+}) {
   return (
     product.image_url?.trim() ||
     product.preview_url?.trim() ||
