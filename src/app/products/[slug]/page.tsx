@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductActions from "@/components/ProductActions";
 import ProductGallery from "@/components/ProductGallery";
+import ProductReviews, { type ProductReview } from "@/components/ProductReviews";
 
 export const dynamic = "force-dynamic";
 
@@ -111,6 +112,42 @@ async function getProduct(slug: string): Promise<ProductWithCategory | null> {
     ...product,
     category,
   };
+}
+
+async function getApprovedReviews(productId: string): Promise<ProductReview[]> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const secret = process.env.SUPABASE_SECRET_KEY;
+
+  if (!supabaseUrl || !secret) {
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/product_reviews?product_id=eq.${encodeURIComponent(
+        productId
+      )}&is_approved=eq.true&select=id,rating,title,body,reviewer_name,verified_purchase,created_at&order=created_at.desc`,
+      {
+        headers: {
+          apikey: secret,
+          Authorization: `Bearer ${secret}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      console.error("PRODUCT_REVIEWS_FETCH_ERROR:", await response.text());
+      return [];
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? (data as ProductReview[]) : [];
+  } catch (error) {
+    console.error("PRODUCT_REVIEWS_FETCH_ERROR:", error);
+    return [];
+  }
 }
 
 async function getRelatedProducts(
@@ -315,6 +352,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   const relatedProducts = await getRelatedProducts(product);
+  const reviews = await getApprovedReviews(product.id);
+  const reviewCount = reviews.length;
+  const averageRating =
+    reviewCount > 0
+      ? reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) /
+        reviewCount
+      : 0;
   const isAIRental =
     String(
       product.product_type ||
@@ -341,7 +385,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const numericPrice = Number(product.price);
   const seoDescription = getSeoDescription(product);
 
-  const productJsonLd = JSON.stringify({
+  const productStructuredData: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.title,
@@ -358,13 +402,50 @@ export default async function ProductPage({ params }: ProductPageProps) {
       url: canonicalUrl,
       priceCurrency: "USD",
       price: Number.isFinite(numericPrice) ? numericPrice.toFixed(2) : "0.00",
-      availability: "https://schema.org/InStock",
+      availability: "https://schema.org/OnlineOnly",
       itemCondition: "https://schema.org/NewCondition",
+      hasMerchantReturnPolicy: {
+        "@id": `${SITE_URL}/refund-policy#policy`,
+      },
     },
-  }).replace(/</g, "\\u003c");
+  };
+
+  if (reviewCount > 0) {
+    productStructuredData.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: Math.round(averageRating * 10) / 10,
+      reviewCount,
+      bestRating: 5,
+      worstRating: 1,
+    };
+
+    productStructuredData.review = reviews.map((review) => ({
+      "@type": "Review",
+      author: {
+        "@type": "Person",
+        name: review.reviewer_name,
+      },
+      datePublished: review.created_at,
+      name: review.title || undefined,
+      reviewBody: review.body,
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: review.rating,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    }));
+  }
+
+  const productJsonLd = JSON.stringify(productStructuredData).replace(
+    /</g,
+    "\\u003c"
+  );
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb] text-[#0b1025]">\n      <script type="application/ld+json">{productJsonLd}</script>\n      <Navbar />
+    <main className="min-h-screen bg-[#f6f7fb] text-[#0b1025]">
+      <script type="application/ld+json">{productJsonLd}</script>
+      <Navbar />
 
       {/* Breadcrumb */}
       <section className="border-b border-slate-200/80 bg-white">
@@ -466,17 +547,36 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   {product.short_description?.trim() || description}
                 </p>
 
-                <div className="mt-6 flex items-center gap-2">
-                  <div className="flex items-center gap-1 text-amber-400">
-                    <span>★</span>
-                    <span>★</span>
-                    <span>★</span>
-                    <span>★</span>
-                    <span>★</span>
-                  </div>
-                  <span className="text-xs font-semibold text-slate-500">
-                    Premium digital asset
-                  </span>
+                <div className="mt-6">
+                  {reviewCount > 0 ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div
+                        className="flex items-center gap-1"
+                        aria-label={`${averageRating.toFixed(1)} out of 5 stars`}
+                      >
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span
+                            key={star}
+                            className={
+                              star <= Math.round(averageRating)
+                                ? "text-amber-400"
+                                : "text-slate-300"
+                            }
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                      <span className="text-xs font-semibold text-slate-500">
+                        {averageRating.toFixed(1)} from {reviewCount} verified{" "}
+                        {reviewCount === 1 ? "review" : "reviews"}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-xs font-semibold text-slate-500">
+                      No customer reviews yet
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -823,6 +923,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
         </div>
       </section>
+
+      <ProductReviews productId={product.id} initialReviews={reviews} />
 
       {/* FAQ */}
       <section className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 sm:pb-10">
