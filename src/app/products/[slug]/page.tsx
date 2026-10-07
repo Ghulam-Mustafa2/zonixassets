@@ -341,6 +341,24 @@ function getSeoDescription(product: ProductWithCategory) {
   return raw.replace(/\s+/g, " ").slice(0, 160);
 }
 
+function getPurchaseSummary(product: ProductWithCategory) {
+  const raw =
+    product.short_description?.trim() ||
+    product.description?.trim() ||
+    "Digital product available with secure checkout and account delivery after payment.";
+
+  const clean = raw.replace(/\s+/g, " ").trim();
+
+  if (clean.length <= 220) {
+    return clean;
+  }
+
+  const clipped = clean.slice(0, 220);
+  const lastSpace = clipped.lastIndexOf(" ");
+
+  return `${clipped.slice(0, lastSpace > 160 ? lastSpace : 220).trim()}…`;
+}
+
 export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
@@ -433,6 +451,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
     product.description?.trim() ||
     product.short_description?.trim() ||
     "Premium digital product with secure checkout and access from your Zonix Assets account after successful payment.";
+
+  const purchaseSummary = getPurchaseSummary(product);
 
   const realSpecifications = [
     ["Tech Stack", product.tech_stack?.trim() || ""],
@@ -653,7 +673,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </h1>
 
                 <p className="mt-4 text-sm leading-6 text-slate-600 sm:text-[16px] sm:leading-7">
-                  {product.short_description?.trim() || description}
+                  {purchaseSummary}
                 </p>
 
                 <div className="mt-6">
