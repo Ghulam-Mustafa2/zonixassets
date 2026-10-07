@@ -53,6 +53,36 @@ type CreateProductBody = {
   fileSizeBytes?: number | string | null;
 };
 
+function normalizeProductType(value: unknown) {
+  const normalized =
+    typeof value === "string"
+      ? value
+          .trim()
+          .toUpperCase()
+          .replace(/[\s-]+/g, "_")
+      : "";
+
+  if (
+    normalized === "DIGITAL_DOWNLOAD" ||
+    normalized === "DIGITAL" ||
+    normalized === "DOWNLOAD" ||
+    normalized === "DIGITAL_PRODUCT"
+  ) {
+    return "DIGITAL_DOWNLOAD";
+  }
+
+  if (
+    normalized === "AI_RENTAL" ||
+    normalized === "AI_RENTAL_SERVICE" ||
+    normalized === "MANAGED_AI_SERVICE"
+  ) {
+    return "AI_RENTAL";
+  }
+
+  return normalized;
+}
+
+
 async function getAdminAuth() {
   const supabaseUrl =
     process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -348,7 +378,7 @@ export async function GET() {
               product.category,
 
             productType:
-              product.product_type ||
+              normalizeProductType(product.product_type) ||
               "DIGITAL_DOWNLOAD",
 
             price:
@@ -487,9 +517,8 @@ export async function POST(
         : "";
 
     const productType =
-      typeof body.productType === "string"
-        ? body.productType.trim().toUpperCase()
-        : "DIGITAL_DOWNLOAD";
+      normalizeProductType(body.productType) ||
+      "DIGITAL_DOWNLOAD";
 
     const price =
       Number(body.price);
@@ -925,7 +954,7 @@ export async function POST(
             product.category,
 
           productType:
-            product.product_type ||
+            normalizeProductType(product.product_type) ||
             "DIGITAL_DOWNLOAD",
 
           price:
