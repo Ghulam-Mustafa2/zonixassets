@@ -63,7 +63,7 @@ export default function ProductReviews({
   initialReviews,
 }: ProductReviewsProps) {
   const [reviews, setReviews] = useState(initialReviews);
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(0);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [saving, setSaving] = useState(false);
@@ -130,7 +130,7 @@ export default function ProductReviews({
       );
       setTitle("");
       setBody("");
-      setRating(5);
+      setRating(0);
       await refreshReviews();
     } catch (submitError) {
       setError(
@@ -255,10 +255,10 @@ export default function ProductReviews({
 
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || rating === 0}
                 className="w-full rounded-2xl bg-[#0b1025] px-5 py-3.5 text-sm font-black text-white transition hover:bg-[#ff6b00] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {saving ? "Saving review..." : "Submit verified review"}
+                {saving ? "Saving review..." : rating === 0 ? "Choose a star rating" : "Submit verified review"}
               </button>
             </form>
           </div>
