@@ -80,6 +80,74 @@ function createCategorySlug(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+async function getPrivateStorageFileSizeBytes(
+  filePath: string | null
+): Promise<number | null> {
+  const normalized = filePath?.trim();
+
+  if (!normalized || /^https?:\/\//i.test(normalized)) {
+    return null;
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SECRET_KEY;
+
+  if (!supabaseUrl || !serviceKey) {
+    return null;
+  }
+
+  const objectPath = normalized
+    .replace(/^product-files\//, "")
+    .replace(/^\/+/, "");
+
+  const lastSlash = objectPath.lastIndexOf("/");
+  const prefix = lastSlash >= 0 ? objectPath.slice(0, lastSlash) : "";
+  const fileName = lastSlash >= 0 ? objectPath.slice(lastSlash + 1) : objectPath;
+
+  if (!fileName) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/storage/v1/object/list/product-files`,
+      {
+        method: "POST",
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prefix,
+          search: fileName,
+          limit: 20,
+          offset: 0,
+        }),
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const objects = (await response.json()) as Array<{
+      name?: string;
+      metadata?: {
+        size?: number | string;
+      } | null;
+    }>;
+
+    const exact = objects.find((item) => item.name === fileName);
+    const size = Number(exact?.metadata?.size);
+
+    return Number.isFinite(size) && size >= 0 ? size : null;
+  } catch {
+    return null;
+  }
+}
+
 async function getProduct(slug: string): Promise<ProductWithCategory | null> {
   const { supabaseUrl, headers } = getSupabaseConfig();
 
@@ -136,6 +204,13 @@ async function getProduct(slug: string): Promise<ProductWithCategory | null> {
     };
   }
 
+  const verifiedStorageSize =
+    await getPrivateStorageFileSizeBytes(product.file_path);
+
+  const isPrivateStoragePath =
+    Boolean(product.file_path?.trim()) &&
+    !/^https?:\/\//i.test(product.file_path?.trim() || "");
+
   const {
     category: _rawCategory,
     ...productWithoutRawCategory
@@ -143,6 +218,9 @@ async function getProduct(slug: string): Promise<ProductWithCategory | null> {
 
   return {
     ...productWithoutRawCategory,
+    file_size_bytes: isPrivateStoragePath
+      ? verifiedStorageSize
+      : product.file_size_bytes,
     rawCategory,
     category,
   };
