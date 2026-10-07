@@ -38,6 +38,8 @@ type Product = {
   price?: number | string | null;
   imageUrl?: string | null;
   image_url?: string | null;
+  createdAt?: string | null;
+  isFeatured?: boolean | null;
 };
 
 type Offer = {
@@ -82,8 +84,8 @@ const fallbackSite: SiteSettings = {
 
 const fallbackHomepage: HomepageSettings = {
   featured_products_enabled: true,
-  featured_products_title: "Best Selling Digital Products",
-  featured_products_subtitle: "Popular products available right now",
+  featured_products_title: "Featured Digital Products",
+  featured_products_subtitle: "Curated products available right now",
   featured_products_limit: 10,
   offers_enabled: true,
   promotion_banner_enabled: true,
@@ -166,12 +168,30 @@ function money(value: Product["price"]) {
   return `$${amount.toFixed(amount % 1 === 0 ? 0 : 2)}`;
 }
 
-function productImage(product: Product | undefined, index: number) {
+function productImage(product: Product | undefined) {
   return (
     product?.imageUrl?.trim() ||
     product?.image_url?.trim() ||
-    fallbackProductImages[index % fallbackProductImages.length]
+    ""
   );
+}
+
+function getProductBadge(product: Product) {
+  if (product.isFeatured) {
+    return "Featured";
+  }
+
+  if (product.createdAt) {
+    const created = new Date(product.createdAt);
+    const ageMs = Date.now() - created.getTime();
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+    if (Number.isFinite(ageMs) && ageMs >= 0 && ageMs <= thirtyDays) {
+      return "New";
+    }
+  }
+
+  return undefined;
 }
 
 export default function Home() {
@@ -426,11 +446,11 @@ export default function Home() {
             <SectionHeading
               eyebrow={
                 homepage.featured_products_subtitle?.trim() ||
-                "Popular products available right now"
+                "Curated products available right now"
               }
               title={
                 homepage.featured_products_title?.trim() ||
-                "Best Selling Digital Products"
+                "Featured Digital Products"
               }
               href="/products"
               linkText="View all products"
@@ -439,26 +459,19 @@ export default function Home() {
             {featuredProducts.length > 0 ? (
               <MovingProductRail products={featuredProducts} />
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {fallbackProductImages.slice(0, 5).map((image, index) => (
-                  <div
-                    key={image}
-                    className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
-                  >
-                    <img
-                      src={image}
-                      alt="Digital product preview"
-                      className="aspect-[4/3] w-full object-contain bg-[#f7f8fb] p-3"
-                    />
-                    <div className="p-4">
-                      <p className="text-xs font-bold uppercase tracking-wide text-[#ff6b00]">
-                        Digital Product
-                      </p>
-                      <div className="mt-2 h-4 w-3/4 rounded bg-slate-200" />
-                      <div className="mt-4 h-8 rounded-lg bg-slate-100" />
-                    </div>
-                  </div>
-                ))}
+              <div className="rounded-[24px] border border-dashed border-slate-300 bg-white px-6 py-10 text-center shadow-sm">
+                <p className="text-sm font-black text-slate-950">
+                  No featured products are available right now.
+                </p>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Browse the full store to see all currently available digital products.
+                </p>
+                <Link
+                  href="/products"
+                  className="mt-5 inline-flex rounded-xl bg-[#0b1025] px-5 py-3 text-xs font-black !text-white transition hover:bg-[#ff6b00]"
+                >
+                  Browse Products
+                </Link>
               </div>
             )}
           </div>
@@ -579,25 +592,28 @@ export default function Home() {
                 <div className="flex items-center justify-between gap-3 px-1">
                   <div>
                     <p className="text-[8px] font-black uppercase tracking-[0.2em] text-[#ff6b00] sm:text-[9px]">
-                      Creator Toolkit
+                      Recommended Creator Tools
                     </p>
                     <h4 className="mt-0.5 text-sm font-black text-slate-950 sm:text-base">
-                      AI, design & social
+                      Tools & platforms creators may use
                     </h4>
+                    <p className="mt-1 text-[9px] leading-4 text-slate-500 sm:text-[10px]">
+                      Recommendations only — not built-in ZonixAssets integrations.
+                    </p>
                   </div>
                 </div>
 
                 <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-9 sm:overflow-visible sm:gap-2.5">
                   {[
-                    { src: "/images/social/chatgpt.png", name: "ChatGPT" },
-                    { src: "/images/social/claude ai.png", name: "Claude" },
-                    { src: "/images/social/gemni.jpeg", name: "Gemini" },
-                    { src: "/images/social/canva.jpeg", name: "Canva" },
-                    { src: "/images/social/figma.jpeg", name: "Figma" },
-                    { src: "/images/social/instagram.jpeg", name: "Instagram" },
-                    { src: "/images/social/pinterest.png", name: "Pinterest" },
-                    { src: "/images/social/x.jpeg", name: "X" },
-                    { src: "/images/social/vorawire.png", name: "VoraWire" },
+                    { src: "/images/social/chatgpt.png", name: "ChatGPT", type: "AI Tool" },
+                    { src: "/images/social/claude ai.png", name: "Claude", type: "AI Tool" },
+                    { src: "/images/social/gemni.jpeg", name: "Gemini", type: "AI Tool" },
+                    { src: "/images/social/canva.jpeg", name: "Canva", type: "Design Tool" },
+                    { src: "/images/social/figma.jpeg", name: "Figma", type: "Design Tool" },
+                    { src: "/images/social/instagram.jpeg", name: "Instagram", type: "Social" },
+                    { src: "/images/social/pinterest.png", name: "Pinterest", type: "Social" },
+                    { src: "/images/social/x.jpeg", name: "X", type: "Social" },
+                    { src: "/images/social/vorawire.png", name: "VoraWire", type: "Resource" },
                   ].map((item) => (
                     <div
                       key={item.src}
@@ -607,8 +623,11 @@ export default function Home() {
                       <div className="flex h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-2 shadow-[0_5px_14px_rgba(15,23,42,0.06)] transition duration-300 group-hover/icon:-translate-y-1 group-hover/icon:border-orange-200 sm:h-auto sm:aspect-square sm:w-full sm:max-w-[68px]">
                         <img src={item.src} alt={item.name} className="h-full w-full object-contain" />
                       </div>
-                      <span className="max-w-full truncate text-center text-[8px] font-bold text-slate-500 sm:text-[9px]">
+                      <span className="max-w-full truncate text-center text-[8px] font-bold text-slate-700 sm:text-[9px]">
                         {item.name}
+                      </span>
+                      <span className="max-w-full truncate text-center text-[7px] font-semibold uppercase tracking-[0.08em] text-slate-400 sm:text-[8px]">
+                        {item.type}
                       </span>
                     </div>
                   ))}
@@ -856,15 +875,7 @@ function MovingProductRail({ products }: { products: Product[] }) {
           key={`${product.id || product.slug}-${index}`}
           product={product}
           index={index}
-          badge={
-            index === 0
-              ? "Best Seller"
-              : index === 1
-              ? "Popular"
-              : index === 2
-              ? "New"
-              : undefined
-          }
+          badge={getProductBadge(product)}
         />
       ))}
     </div>
@@ -872,21 +883,29 @@ function MovingProductRail({ products }: { products: Product[] }) {
 }
 
 function SingleFeaturedProduct({ product }: { product: Product }) {
-  const image = productImage(product, 0);
+  const image = productImage(product);
   const productHref = `/products/${product.slug}`;
 
   return (
     <article className="mx-auto grid max-w-4xl overflow-hidden rounded-[24px] border border-slate-200/90 bg-white shadow-[0_14px_36px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_22px_50px_rgba(15,23,42,0.12)] md:grid-cols-[1.05fr_.95fr]">
       <Link href={productHref} className="block bg-[#f7f8fb]">
         <div className="relative h-full min-h-[230px] overflow-hidden border-b border-slate-100 md:min-h-[300px] md:border-b-0 md:border-r">
-          <img
-            src={image}
-            alt={product.title}
-            className="h-full w-full object-contain p-4 transition duration-500 hover:scale-[1.02] sm:p-5"
-          />
-          <span className="absolute left-3 top-3 rounded-full bg-[#0b1025] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-white shadow-sm sm:left-4 sm:top-4">
-            Best Seller
-          </span>
+          {image ? (
+            <img
+              src={image}
+              alt={product.title}
+              className="h-full w-full object-contain p-4 transition duration-500 hover:scale-[1.02] sm:p-5"
+            />
+          ) : (
+            <div className="flex h-full min-h-[230px] items-center justify-center px-6 text-center text-sm font-bold text-slate-400">
+              Product preview unavailable
+            </div>
+          )}
+          {getProductBadge(product) && (
+            <span className="absolute left-3 top-3 rounded-full bg-[#0b1025] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-white shadow-sm sm:left-4 sm:top-4">
+              {getProductBadge(product)}
+            </span>
+          )}
         </div>
       </Link>
 
@@ -946,18 +965,24 @@ function ProductCard({
   index: number;
   badge?: string;
 }) {
-  const image = productImage(product, index);
+  const image = productImage(product);
   const productHref = `/products/${product.slug}`;
 
   return (
     <article className="group flex min-w-0 flex-col overflow-hidden rounded-[22px] border border-slate-200/90 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_20px_45px_rgba(15,23,42,0.11)]">
       <Link href={productHref} className="block">
         <div className="relative aspect-[4/3] overflow-hidden border-b border-slate-100 bg-[#f7f8fb]">
-          <img
-            src={image}
-            alt={product.title}
-            className="h-full w-full object-contain p-2.5 transition duration-500 group-hover:scale-[1.025] sm:p-3"
-          />
+          {image ? (
+            <img
+              src={image}
+              alt={product.title}
+              className="h-full w-full object-contain p-2.5 transition duration-500 group-hover:scale-[1.025] sm:p-3"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center px-4 text-center text-xs font-bold text-slate-400">
+              Product preview unavailable
+            </div>
+          )}
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-950/10 to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
 
