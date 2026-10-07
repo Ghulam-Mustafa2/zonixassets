@@ -41,13 +41,18 @@ export default function ProductActions({
     router.push("/checkout");
   }
 
+  const formattedPrice = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(product.price);
+
   return (
-    <div className="mt-8 space-y-3">
+    <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <button
           type="button"
-          onClick={handleAddToCart}
-          disabled={added}
+          onClick={handleBuyNow}
+          disabled={buying}
           className="
             group relative overflow-hidden rounded-xl
             bg-[#ff6b00] px-6 py-4
@@ -57,27 +62,25 @@ export default function ProductActions({
             hover:-translate-y-0.5 hover:bg-[#f25f00]
             hover:shadow-[0_16px_34px_rgba(255,107,0,0.28)]
             active:translate-y-0
-            disabled:cursor-default disabled:bg-[#ff8a3d]
+            disabled:cursor-wait disabled:opacity-70
             disabled:hover:translate-y-0
           "
         >
           <span className="relative z-10 flex items-center justify-center gap-2">
-            {added ? (
+            {buying ? (
               <>
                 <span
                   aria-hidden="true"
-                  className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs"
-                >
-                  ✓
-                </span>
-                Added to Cart
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                />
+                Opening Checkout...
               </>
             ) : (
               <>
                 <span aria-hidden="true" className="text-base">
-                  🛒
+                  ⚡
                 </span>
-                Add to Cart
+                Buy Now — {formattedPrice}
               </>
             )}
           </span>
@@ -95,8 +98,8 @@ export default function ProductActions({
 
         <button
           type="button"
-          onClick={handleBuyNow}
-          disabled={buying}
+          onClick={handleAddToCart}
+          disabled={added}
           className="
             rounded-xl border border-[#24304f]
             bg-[#111a3a] px-6 py-4
@@ -107,25 +110,27 @@ export default function ProductActions({
             hover:bg-[#182349]
             hover:shadow-[0_14px_28px_rgba(15,23,42,0.18)]
             active:translate-y-0
-            disabled:cursor-wait disabled:opacity-60
+            disabled:cursor-default disabled:opacity-70
             disabled:hover:translate-y-0
           "
         >
           <span className="flex items-center justify-center gap-2">
-            {buying ? (
+            {added ? (
               <>
                 <span
                   aria-hidden="true"
-                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
-                />
-                Opening Checkout...
+                  className="flex h-5 w-5 items-center justify-center rounded-full bg-white/15 text-xs"
+                >
+                  ✓
+                </span>
+                Added to Cart
               </>
             ) : (
               <>
                 <span aria-hidden="true" className="text-base">
-                  ⚡
+                  🛒
                 </span>
-                Buy Now
+                Add to Cart
               </>
             )}
           </span>
@@ -148,9 +153,9 @@ export default function ProductActions({
             aria-hidden="true"
             className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-50 text-[10px] text-[#ff6b00]"
           >
-            ↓
+            1×
           </span>
-          Instant digital access
+          One-time payment
         </span>
 
         <span className="inline-flex items-center gap-1.5">
