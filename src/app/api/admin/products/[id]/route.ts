@@ -53,6 +53,36 @@ type UpdateProductBody = {
   fileSizeBytes?: number | string | null;
 };
 
+function normalizeProductType(value: unknown) {
+  const normalized =
+    typeof value === "string"
+      ? value
+          .trim()
+          .toUpperCase()
+          .replace(/[\s-]+/g, "_")
+      : "";
+
+  if (
+    normalized === "DIGITAL_DOWNLOAD" ||
+    normalized === "DIGITAL" ||
+    normalized === "DOWNLOAD" ||
+    normalized === "DIGITAL_PRODUCT"
+  ) {
+    return "DIGITAL_DOWNLOAD";
+  }
+
+  if (
+    normalized === "AI_RENTAL" ||
+    normalized === "AI_RENTAL_SERVICE" ||
+    normalized === "MANAGED_AI_SERVICE"
+  ) {
+    return "AI_RENTAL";
+  }
+
+  return normalized;
+}
+
+
 type RouteContext = {
   params: Promise<{
     id: string;
@@ -356,7 +386,7 @@ export async function GET(
           category:
             product.category,
           productType:
-            product.product_type ||
+            normalizeProductType(product.product_type) ||
             "DIGITAL_DOWNLOAD",
           price:
             Number(product.price || 0),
@@ -718,12 +748,7 @@ export async function PATCH(
       body.productType !== undefined
     ) {
       const productType =
-        typeof body.productType ===
-        "string"
-          ? body.productType
-              .trim()
-              .toUpperCase()
-          : "";
+        normalizeProductType(body.productType);
 
       if (
         productType !==
