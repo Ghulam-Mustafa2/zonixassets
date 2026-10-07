@@ -22,6 +22,13 @@ type ProductRow = {
   image_url: string | null;
   image_url_2: string | null;
   image_url_3: string | null;
+  demo_url: string | null;
+  tech_stack: string | null;
+  file_format: string | null;
+  license_type: string | null;
+  package_contents: string | null;
+  file_size_bytes: number | string | null;
+  updated_at?: string | null;
   created_at?: string;
 };
 
@@ -38,6 +45,12 @@ type UpdateProductBody = {
   imageUrl?: string | null;
   imageUrl2?: string | null;
   imageUrl3?: string | null;
+  demoUrl?: string | null;
+  techStack?: string | null;
+  fileFormat?: string | null;
+  licenseType?: string | null;
+  packageContents?: string | null;
+  fileSizeBytes?: number | string | null;
 };
 
 type RouteContext = {
@@ -276,7 +289,7 @@ export async function GET(
     const response = await fetch(
       `${auth.supabaseUrl}/rest/v1/products?id=eq.${encodeURIComponent(
         productId
-      )}&select=id,title,slug,description,category,product_type,price,featured,is_active,file_path,image_url,image_url_2,image_url_3,created_at`,
+      )}&select=id,title,slug,description,category,product_type,price,featured,is_active,file_path,image_url,image_url_2,image_url_3,demo_url,tech_stack,file_format,license_type,package_contents,file_size_bytes,updated_at,created_at`,
       {
         method: "GET",
         headers: {
@@ -359,6 +372,22 @@ export async function GET(
             product.image_url_2,
           imageUrl3:
             product.image_url_3,
+          demoUrl:
+            product.demo_url,
+          techStack:
+            product.tech_stack,
+          fileFormat:
+            product.file_format,
+          licenseType:
+            product.license_type,
+          packageContents:
+            product.package_contents,
+          fileSizeBytes:
+            product.file_size_bytes == null
+              ? null
+              : Number(product.file_size_bytes),
+          updatedAt:
+            product.updated_at,
           createdAt:
             product.created_at,
         },
@@ -785,6 +814,96 @@ export async function PATCH(
     }
 
     /*
+      Product specifications
+    */
+
+    if (body.demoUrl !== undefined) {
+      const demoUrl =
+        typeof body.demoUrl === "string"
+          ? body.demoUrl.trim() || null
+          : null;
+
+      if (demoUrl) {
+        try {
+          const parsedUrl = new URL(demoUrl);
+
+          if (
+            parsedUrl.protocol !== "http:" &&
+            parsedUrl.protocol !== "https:"
+          ) {
+            throw new Error("Invalid protocol");
+          }
+        } catch {
+          return NextResponse.json(
+            {
+              error:
+                "Live demo URL must be a valid http or https URL.",
+            },
+            {
+              status: 400,
+            }
+          );
+        }
+      }
+
+      updates.demo_url = demoUrl;
+    }
+
+    if (body.techStack !== undefined) {
+      updates.tech_stack =
+        typeof body.techStack === "string"
+          ? body.techStack.trim() || null
+          : null;
+    }
+
+    if (body.fileFormat !== undefined) {
+      updates.file_format =
+        typeof body.fileFormat === "string"
+          ? body.fileFormat.trim() || null
+          : null;
+    }
+
+    if (body.licenseType !== undefined) {
+      updates.license_type =
+        typeof body.licenseType === "string"
+          ? body.licenseType.trim() || null
+          : null;
+    }
+
+    if (body.packageContents !== undefined) {
+      updates.package_contents =
+        typeof body.packageContents === "string"
+          ? body.packageContents.trim() || null
+          : null;
+    }
+
+    if (body.fileSizeBytes !== undefined) {
+      const fileSizeBytes =
+        body.fileSizeBytes === null ||
+        body.fileSizeBytes === ""
+          ? null
+          : Number(body.fileSizeBytes);
+
+      if (
+        fileSizeBytes !== null &&
+        (!Number.isFinite(fileSizeBytes) ||
+          fileSizeBytes < 0)
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "File size must be a valid non-negative number of bytes.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      updates.file_size_bytes = fileSizeBytes;
+    }
+
+    /*
       Product image URLs
     */
 
@@ -968,6 +1087,22 @@ export async function PATCH(
             product.image_url_2,
           imageUrl3:
             product.image_url_3,
+          demoUrl:
+            product.demo_url,
+          techStack:
+            product.tech_stack,
+          fileFormat:
+            product.file_format,
+          licenseType:
+            product.license_type,
+          packageContents:
+            product.package_contents,
+          fileSizeBytes:
+            product.file_size_bytes == null
+              ? null
+              : Number(product.file_size_bytes),
+          updatedAt:
+            product.updated_at,
           createdAt:
             product.created_at,
         },
