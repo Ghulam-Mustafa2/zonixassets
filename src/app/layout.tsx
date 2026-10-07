@@ -50,6 +50,23 @@ export const metadata: Metadata = {
   },
 };
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  "https://zonixassets.shop";
+
+const storeStructuredData = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "OnlineStore",
+  "@id": `${siteUrl}#store`,
+  name: "ZonixAssets",
+  url: siteUrl,
+  hasMerchantReturnPolicy: {
+    "@type": "MerchantReturnPolicy",
+    "@id": `${siteUrl}/refund-policy#policy`,
+    merchantReturnLink: `${siteUrl}/refund-policy`,
+  },
+}).replace(/</g, "\\u003c");
+
 export default function RootLayout({
   children,
 }: LayoutProps<"/">) {
@@ -59,6 +76,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <script type="application/ld+json">{storeStructuredData}</script>
         <CartProvider>{children}</CartProvider>
         <StoreChatWidget />
       </body>
