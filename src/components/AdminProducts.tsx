@@ -19,6 +19,13 @@ type Product = {
   imageUrl: string | null;
   imageUrl2: string | null;
   imageUrl3: string | null;
+  demoUrl: string | null;
+  techStack: string | null;
+  fileFormat: string | null;
+  licenseType: string | null;
+  packageContents: string | null;
+  fileSizeBytes: number | null;
+  updatedAt?: string | null;
   createdAt?: string;
 };
 
@@ -35,6 +42,12 @@ type ProductForm = {
   imageUrl: string;
   imageUrl2: string;
   imageUrl3: string;
+  demoUrl: string;
+  techStack: string;
+  fileFormat: string;
+  licenseType: string;
+  packageContents: string;
+  fileSizeBytes: string;
 };
 
 const emptyForm: ProductForm = {
@@ -50,6 +63,12 @@ const emptyForm: ProductForm = {
   imageUrl: "",
   imageUrl2: "",
   imageUrl3: "",
+  demoUrl: "",
+  techStack: "",
+  fileFormat: "",
+  licenseType: "",
+  packageContents: "",
+  fileSizeBytes: "",
 };
 
 const EXTERNAL_DELIVERY_PREFIX = "external:";
@@ -408,6 +427,10 @@ export default function AdminProducts() {
         filePath: String(
           data.storagePath
         ),
+        fileSizeBytes:
+          Number.isFinite(Number(data.size))
+            ? String(data.size)
+            : current.fileSizeBytes,
       }));
 
       setSuccess(
@@ -619,6 +642,15 @@ export default function AdminProducts() {
       imageUrl: product.imageUrl || "",
       imageUrl2: product.imageUrl2 || "",
       imageUrl3: product.imageUrl3 || "",
+      demoUrl: product.demoUrl || "",
+      techStack: product.techStack || "",
+      fileFormat: product.fileFormat || "",
+      licenseType: product.licenseType || "",
+      packageContents: product.packageContents || "",
+      fileSizeBytes:
+        product.fileSizeBytes == null
+          ? ""
+          : String(product.fileSizeBytes),
     });
 
     setError("");
@@ -740,6 +772,31 @@ export default function AdminProducts() {
             imageUrl3:
               form.imageUrl3.trim() ||
               null,
+
+            demoUrl:
+              form.demoUrl.trim() ||
+              null,
+
+            techStack:
+              form.techStack.trim() ||
+              null,
+
+            fileFormat:
+              form.fileFormat.trim() ||
+              null,
+
+            licenseType:
+              form.licenseType.trim() ||
+              null,
+
+            packageContents:
+              form.packageContents.trim() ||
+              null,
+
+            fileSizeBytes:
+              form.fileSizeBytes.trim()
+                ? Number(form.fileSizeBytes)
+                : null,
           }),
         }
       );
@@ -1238,6 +1295,77 @@ export default function AdminProducts() {
                       placeholder="Describe your digital product..."
                       className="mt-2 w-full resize-none rounded-2xl border border-[#dce4ef] bg-[#f7f9fc] px-4 py-3.5 leading-7 text-[#081529] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#ff9b5c] focus:bg-white focus:ring-4 focus:ring-orange-100"
                     />
+                  </div>
+                  <div className="mt-6 rounded-[24px] border border-[#dce4ef] bg-[#f8fafc] p-5">
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-[#ff6500]">
+                      Product specifications
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-[#7d8ba0]">
+                      Only real details entered here will appear on the public product page.
+                    </p>
+
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                      <Field
+                        label="Live demo URL"
+                        value={form.demoUrl}
+                        placeholder="https://demo.example.com"
+                        onChange={(value) =>
+                          handleChange("demoUrl", value)
+                        }
+                      />
+
+                      <Field
+                        label="Tech stack"
+                        value={form.techStack}
+                        placeholder="Next.js, React, Tailwind CSS"
+                        onChange={(value) =>
+                          handleChange("techStack", value)
+                        }
+                      />
+
+                      <Field
+                        label="File format"
+                        value={form.fileFormat}
+                        placeholder="ZIP, PPTX, PNG, Source Code"
+                        onChange={(value) =>
+                          handleChange("fileFormat", value)
+                        }
+                      />
+
+                      <Field
+                        label="License type"
+                        value={form.licenseType}
+                        placeholder="Personal / Commercial Use"
+                        onChange={(value) =>
+                          handleChange("licenseType", value)
+                        }
+                      />
+
+                      <Field
+                        label="File size (bytes)"
+                        value={form.fileSizeBytes}
+                        type="number"
+                        placeholder="5242880"
+                        onChange={(value) =>
+                          handleChange("fileSizeBytes", value)
+                        }
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="text-sm font-black text-[#53627a]">
+                        Package contents
+                      </label>
+                      <textarea
+                        value={form.packageContents}
+                        onChange={(event) =>
+                          handleChange("packageContents", event.target.value)
+                        }
+                        rows={4}
+                        placeholder="Example: 50 feed posts, 30 Story/Reel templates, captions, hooks and content calendar."
+                        className="mt-2 w-full resize-none rounded-2xl border border-[#dce4ef] bg-white px-4 py-3.5 leading-6 text-[#081529] outline-none transition placeholder:text-[#a8b4c5] focus:border-[#ff9b5c] focus:ring-4 focus:ring-orange-100"
+                      />
+                    </div>
                   </div>
                 </FormSection>
 
