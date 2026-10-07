@@ -442,9 +442,56 @@ export default async function ProductPage({ params }: ProductPageProps) {
     "\\u003c"
   );
 
+  const breadcrumbItems = [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: SITE_URL,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Products",
+      item: `${SITE_URL}/products`,
+    },
+    ...(product.category
+      ? [
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: product.category.name,
+            item: `${SITE_URL}/products?category=${encodeURIComponent(
+              product.category.slug
+            )}`,
+          },
+          {
+            "@type": "ListItem",
+            position: 4,
+            name: product.title,
+            item: canonicalUrl,
+          },
+        ]
+      : [
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: product.title,
+            item: canonicalUrl,
+          },
+        ]),
+  ];
+
+  const breadcrumbJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbItems,
+  }).replace(/</g, "\\u003c");
+
   return (
     <main className="min-h-screen bg-[#f6f7fb] text-[#0b1025]">
       <script type="application/ld+json">{productJsonLd}</script>
+      <script type="application/ld+json">{breadcrumbJsonLd}</script>
       <Navbar />
 
       {/* Breadcrumb */}
