@@ -29,6 +29,13 @@ type Product = {
   image_url_2: string | null;
   image_url_3: string | null;
   file_path: string | null;
+  demo_url: string | null;
+  tech_stack: string | null;
+  file_format: string | null;
+  license_type: string | null;
+  package_contents: string | null;
+  file_size_bytes: number | string | null;
+  updated_at: string | null;
   is_active: boolean;
   is_featured: boolean;
   created_at: string;
@@ -209,6 +216,47 @@ function formatPrice(price: number | string) {
   }).format(amount);
 }
 
+function formatFileSize(value: number | string | null) {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+
+  const bytes = Number(value);
+
+  if (!Number.isFinite(bytes) || bytes < 0) {
+    return "";
+  }
+
+  if (bytes === 0) {
+    return "0 B";
+  }
+
+  const units = ["B", "KB", "MB", "GB"];
+  const index = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1
+  );
+  const size = bytes / Math.pow(1024, index);
+
+  return `${size >= 10 || index === 0 ? size.toFixed(0) : size.toFixed(1)} ${units[index]}`;
+}
+
+function formatProductDate(value: string | null | undefined) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
 function getFeatures(product: ProductWithCategory) {
   const slug = product.category?.slug;
 
@@ -379,6 +427,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
     product.description?.trim() ||
     product.short_description?.trim() ||
     "Premium digital product with secure checkout and access from your Zonix Assets account after successful payment.";
+
+  const realSpecifications = [
+    ["Tech Stack", product.tech_stack?.trim() || ""],
+    ["File Format", product.file_format?.trim() || ""],
+    ["License", product.license_type?.trim() || ""],
+    ["File Size", formatFileSize(product.file_size_bytes)],
+    ["Last Updated", formatProductDate(product.updated_at || product.created_at)],
+  ].filter(([, value]) => Boolean(value));
 
 
   const canonicalUrl = `${SITE_URL}/products/${encodeURIComponent(product.slug)}`;
@@ -660,6 +716,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   />
                 </div>
 
+                {product.demo_url?.trim() && (
+                  <a
+                    href={product.demo_url.trim()}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-[#0b1025] bg-white px-5 py-3.5 text-sm font-black text-[#0b1025] transition hover:border-[#ff6b00] hover:text-[#ff6b00]"
+                  >
+                    Live Preview
+                  </a>
+                )}
+
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   {[
                     ["Secure checkout", "Protected purchase"],
@@ -757,6 +824,40 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </p>
               </div>
             </div>
+
+            {realSpecifications.length > 0 && (
+              <div className="mt-7 border-t border-slate-200 pt-6">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ff6b00]">
+                  Product Specifications
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {realSpecifications.map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="rounded-2xl border border-slate-200 bg-white p-4"
+                    >
+                      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
+                        {label}
+                      </p>
+                      <p className="mt-2 text-sm font-black text-[#0b1025]">
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {product.package_contents?.trim() && (
+              <div className="mt-7 border-t border-slate-200 pt-6">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ff6b00]">
+                  Package Contents
+                </p>
+                <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">
+                  {product.package_contents.trim()}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="rounded-[28px] bg-gradient-to-br from-[#0b1025] to-[#172554] p-6 text-white shadow-[0_18px_50px_rgba(15,23,42,0.16)] sm:p-8">
