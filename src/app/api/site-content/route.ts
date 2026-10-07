@@ -50,6 +50,7 @@ function normalizeProduct(product: AnyRow) {
       text(product.cover_url) ||
       text(product.preview_image_url),
     createdAt: text(product.created_at),
+    isFeatured: bool(product.is_featured),
   };
 }
 
