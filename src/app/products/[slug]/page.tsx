@@ -18,6 +18,7 @@ type Category = {
 type Product = {
   id: string;
   category_id: string | null;
+  category?: string | null;
   title: string;
   slug: string;
   short_description: string | null;
@@ -41,8 +42,9 @@ type Product = {
   created_at: string;
 };
 
-type ProductWithCategory = Product & {
+type ProductWithCategory = Omit<Product, "category"> & {
   category: Category | null;
+  rawCategory: string | null;
 };
 
 type ProductPageProps = {
@@ -68,6 +70,14 @@ function getSupabaseConfig() {
       "Content-Type": "application/json",
     },
   };
+}
+
+function createCategorySlug(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 async function getProduct(slug: string): Promise<ProductWithCategory | null> {
@@ -96,6 +106,7 @@ async function getProduct(slug: string): Promise<ProductWithCategory | null> {
   }
 
   const product = products[0];
+  const rawCategory = product.category?.trim() || null;
   let category: Category | null = null;
 
   if (product.category_id) {
@@ -115,8 +126,24 @@ async function getProduct(slug: string): Promise<ProductWithCategory | null> {
     }
   }
 
+  if (!category && rawCategory) {
+    const slug = createCategorySlug(rawCategory);
+
+    category = {
+      id: `custom-${slug || "category"}`,
+      name: rawCategory,
+      slug: slug || "all",
+    };
+  }
+
+  const {
+    category: _rawCategory,
+    ...productWithoutRawCategory
+  } = product;
+
   return {
-    ...product,
+    ...productWithoutRawCategory,
+    rawCategory,
     category,
   };
 }
@@ -257,63 +284,37 @@ function formatProductDate(value: string | null | undefined) {
   }).format(date);
 }
 
+function formatProductType(value: string | null) {
+  const normalized = String(value || "Digital Product")
+    .trim()
+    .replace(/_/g, " ")
+    .toLowerCase();
+
+  return normalized.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 function getFeatures(product: ProductWithCategory) {
-  const slug = product.category?.slug;
+  const packageItems =
+    product.package_contents
+      ?.split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean) || [];
 
-  if (slug === "ui-kits") {
-    return [
-      "Premium interface components",
-      "Responsive layouts",
-      "Modern dashboard sections",
-      "Easy customization",
-      "Commercial-ready usage",
-      "Instant digital access",
-    ];
-  }
-
-  if (slug === "website-templates") {
-    return [
-      "Modern landing pages",
-      "Responsive design",
-      "Reusable sections",
-      "Conversion-focused layouts",
-      "Easy customization",
-      "Instant digital access",
-    ];
-  }
-
-  if (slug === "graphics") {
-    return [
-      "Premium creative assets",
-      "Multiple design-ready files",
-      "Creator-friendly resources",
-      "Easy customization",
-      "Professional quality",
-      "Instant digital access",
-    ];
-  }
-
-  if (slug === "digital-tools") {
-    return [
-      "Ready-to-use digital tools",
-      "Productivity-focused workflow",
-      "Easy setup",
-      "Modern resources",
-      "Account-based access",
-      "Instant digital delivery",
-    ];
+  if (packageItems.length > 0) {
+    return packageItems.slice(0, 6);
   }
 
   return [
-    "Premium digital resource",
-    "Professional quality",
-    "Easy to use",
-    "Secure purchase",
-    "Account-based access",
-    "Instant digital access",
-  ];
+    product.file_format?.trim()
+      ? `File format: ${product.file_format.trim()}`
+      : null,
+    product.license_type?.trim()
+      ? `License: ${product.license_type.trim()}`
+      : null,
+    "Secure digital delivery after payment confirmation",
+    "Download access from your ZonixAssets account",
+  ].filter((item): item is string => Boolean(item));
 }
-
 function getPrimaryImage(product: Product) {
   return (
     product.image_url?.trim() ||
@@ -800,7 +801,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   Type
                 </p>
                 <p className="mt-2 text-sm font-black text-[#0b1025]">
-                  {product.product_type || "Digital Product"}
+                  {formatProductType(product.product_type)}
                 </p>
               </div>
 
@@ -865,7 +866,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               What&apos;s Included
             </p>
             <h2 className="mt-2 text-2xl font-black tracking-tight">
-              Built for a professional workflow.
+              What you receive with this purchase.
             </h2>
 
             <div className="mt-6 grid gap-3">
