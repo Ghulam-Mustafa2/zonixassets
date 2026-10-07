@@ -143,8 +143,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unable to verify your purchase." }, { status: 500 });
     }
 
-    const orderIds = Array.isArray(paidOrdersData)
-      ? paidOrdersData.map((order: { id?: string }) => order.id).filter(Boolean)
+    const orderIds: string[] = Array.isArray(paidOrdersData)
+      ? paidOrdersData
+          .map((order: { id?: string }) => order.id)
+          .filter((id: string | undefined): id is string => Boolean(id))
       : [];
 
     if (orderIds.length === 0) {
