@@ -197,7 +197,7 @@ async function getRelatedProducts(
     ];
 
     const response = await fetch(
-      `${supabaseUrl}/rest/v1/products?select=id,title,slug,short_description,description,price,product_type,preview_url,image_url,image_url_2,image_url_3,file_path,is_active,is_featured,created_at,category_id&${filters.join(
+      `${supabaseUrl}/rest/v1/products?select=id,title,slug,short_description,description,price,product_type,preview_url,image_url,image_url_2,image_url_3,file_path,is_active,is_featured,created_at,category_id,category&${filters.join(
         "&"
       )}&order=is_featured.desc,created_at.desc&limit=4`,
       {
@@ -866,7 +866,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             )}
           </div>
 
-          <div className="rounded-[28px] bg-gradient-to-br from-[#0b1025] to-[#172554] p-6 text-white shadow-[0_18px_50px_rgba(15,23,42,0.16)] sm:p-8">
+          <div className="self-start rounded-[28px] bg-gradient-to-br from-[#0b1025] to-[#172554] p-6 text-white shadow-[0_18px_50px_rgba(15,23,42,0.16)] sm:p-8">
             <p className="text-xs font-black uppercase tracking-[0.16em] text-orange-400">
               What&apos;s Included
             </p>
@@ -1145,7 +1145,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   More products you may like.
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                  Explore more premium digital products from the same collection.
+                  Explore more digital products available from ZonixAssets.
                 </p>
               </div>
 
@@ -1171,7 +1171,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
                       <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 p-3">
                         <span className="rounded-full bg-white/95 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.08em] text-[#ff6b00] shadow-sm backdrop-blur">
-                          {product.category?.name || "Digital Product"}
+                          {item.category?.trim() || "Digital Product"}
                         </span>
 
                         {item.is_featured && (
