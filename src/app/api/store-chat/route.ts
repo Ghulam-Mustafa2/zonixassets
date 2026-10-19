@@ -265,42 +265,38 @@ export async function POST(request: NextRequest) {
 
     const catalogContext = buildCatalogContext(catalog);
 
-    const recentMessages = messages.slice(-10);
-    const finalUserIndex = recentMessages
-      .map((message) => message.role)
-      .lastIndexOf("user");
+    // GM AI receives one user turn. This prevents older user turns or
+    // catalog instructions from being mistaken for the current question.
+    const latestIndex = messages.map((m) => m.role).lastIndexOf("user");
+    if (latestIndex < 0 || latestIndex !== messages.length - 1) {
+      return NextResponse.json(
+        { success: false, error: "Please provide a new customer message." },
+        { status: 400 }
+      );
+    }
 
-    const upstreamMessages = recentMessages.map(
-      (message, index) => {
-        if (index !== finalUserIndex) {
-          return message;
-        }
+    const currentQuestion = messages[latestIndex].content;
+    const history = messages
+      .slice(Math.max(0, latestIndex - 6), latestIndex)
+      .map((m) => `${m.role === "user" ? "Customer" : "Assistant"}: ${m.content}`)
+      .join("\n");
 
-        return {
-          role: "user" as const,
-          content: [
-            catalogContext,
-            "",
-            "CUSTOMER QUESTION",
-            message.content,
-            "",
-            "INSTRUCTIONS FOR THIS REPLY",
-            "- Answer the customer's actual question directly.",
-            "- For product questions, rely on the live catalog above.",
-            "- Give exact current prices and direct product links when relevant.",
-            "- If the customer asks for the cheapest product, use the cheapest product stated above.",
-            "- Keep the response concise, friendly and helpful.",
-            "- You may reply in English, Urdu or Roman Urdu to match the customer.",
-            "- LEAD GENERATION: If the visitor shows clear buying intent, asks for personalized help, wants follow-up, or seems ready to purchase, politely offer to take their contact details for ZonixAssets follow-up.",
-            "- Before asking for contact details, clearly say they will be used by ZonixAssets only to follow up about their enquiry or purchase interest.",
-            "- Ask for: name, email OR WhatsApp number, and which product/service they are interested in. Do not require both email and WhatsApp.",
-            "- Do not ask for contact details on every message. Ask only when it is contextually useful, and do not repeat the request if the visitor declines.",
-            "- Never ask for passwords, card details, OTPs, security codes, CNIC/passport numbers, or other sensitive information.",
-            "- If the visitor provides contact details, briefly thank them and confirm that ZonixAssets can use those details to follow up about the enquiry.",
-          ].join("\n"),
-        };
-      }
-    );
+    const upstreamMessages: ChatMessage[] = [{
+      role: "user",
+      content: [
+        "CURRENT CUSTOMER QUESTION:",
+        currentQuestion,
+        "",
+        "You are ZonixAssets AI Sales & Support. Answer the CURRENT question, not an earlier question. If the visitor says hello/hi, greet them naturally without talking about receiving a catalog.",
+        "Only use the live catalog for product facts, prices and links. Never invent a price or product. If a price is missing, say so.",
+        "Be concise and respond in English, Urdu, or Roman Urdu to match the visitor.",
+        "Only when contextually relevant, offer human follow-up. Say contact details will only be used by ZonixAssets for the enquiry. Ask for name, email OR WhatsApp, and product interest; do not repeatedly ask or ask for passwords, card details, OTPs, or ID numbers.",
+        history ? "PAST MESSAGES FOR CONTEXT ONLY (do not answer them):\n" + history : "",
+        catalogContext,
+        "ANSWER THIS CURRENT CUSTOMER QUESTION NOW:",
+        currentQuestion,
+      ].filter(Boolean).join("\n"),
+    }];
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
