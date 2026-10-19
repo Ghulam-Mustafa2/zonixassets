@@ -125,6 +125,52 @@ function buildCatalogContext(catalog: CatalogResponse) {
   ].join("\n");
 }
 
+function extractReply(payload: unknown): string {
+  if (typeof payload === "string") return payload.trim();
+  if (!payload || typeof payload !== "object") return "";
+
+  const data = payload as Record<string, unknown>;
+  for (const key of ["reply", "response", "answer", "message", "content", "text"]) {
+    const value = data[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (value && typeof value === "object") {
+      const nested = extractReply(value);
+      if (nested) return nested;
+    }
+  }
+
+  if (Array.isArray(data.choices)) {
+    for (const choice of data.choices) {
+      const result = extractReply(choice);
+      if (result) return result;
+    }
+  }
+
+  return "";
+}
+
+async function readUpstreamReply(response: Response): Promise<string> {
+  const raw = (await response.text()).trim();
+  if (!raw) return "";
+
+  const looksLikeJson =
+    response.headers.get("content-type")?.includes("application/json") ||
+    raw.startsWith("{") ||
+    raw.startsWith("[") ||
+    (raw.startsWith('"') && raw.endsWith('"'));
+
+  if (!looksLikeJson) return raw;
+
+  try {
+    return extractReply(JSON.parse(raw));
+  } catch {
+    // Plain text sometimes starts with a JSON-like character.
+    return response.headers.get("content-type")?.includes("application/json")
+      ? ""
+      : raw;
+  }
+}
+
 export async function GET() {
   return NextResponse.json(
     {
@@ -297,7 +343,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const reply = (await upstreamResponse.text()).trim();
+    const reply = await readUpstreamReply(upstreamResponse);
 
     if (!reply) {
       return NextResponse.json(
